@@ -1,332 +1,429 @@
-
 import streamlit as st
 import pandas as pd
 from supabase import create_client
-from datetime import datetime
-import pytz
 import time
+import plotly.express as px
+import json
+import numpy as np
 
-# --- Configuración Inicial ---
-st.set_page_config(page_title="Vertex Cloud", page_icon="☁️", layout="wide")
+# --- UTILIDADES DE DATOS ---
+import numpy as np
 
-# Inicializar Supabase
-try:
-    URL = st.secrets["SUPABASE_URL"]
-    KEY = st.secrets["SUPABASE_KEY"]
-except:
-    st.error("⚠️ Configura las credenciales en .streamlit/secrets.toml")
-    st.stop()
+# --- UTILIDADES DE DATOS ---
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (np.integer, np.int64)): return int(obj)
+        if isinstance(obj, (np.floating, np.float64)): return float(obj)
+        if isinstance(obj, (np.ndarray, list)): return [self.default(i) for i in obj]
+        if isinstance(obj, (np.bool_, bool)): return bool(obj)
+        if hasattr(obj, 'item'): return obj.item() # Generic numpy scalar
+        return super(NpEncoder, self).default(obj)
 
-@st.cache_resource
-def init_connection():
-    return create_client(URL, KEY)
-
-supabase = init_connection()
-
-# --- Estados de Sesión (Carrito) ---
-if 'cart' not in st.session_state:
-    st.session_state.cart = []
-
-# --- Funciones de Utilidad ---
-def get_mexico_time():
-    return datetime.now(pytz.timezone('America/Mexico_City'))
-
-def format_currency(value):
-    return f"${value:,.2f}"
-
-# --- Lógica de Base de Datos ---
-def get_products():
-    response = supabase.table('products').select("*").order('name').execute()
-    return pd.DataFrame(response.data)
-
-def get_customers():
-    response = supabase.table('customers').select("*").order('name').execute()
-    return pd.DataFrame(response.data)
-
-def create_sale(items, total, customer_name="Mostrador", payment_method="Efectivo"):
+def purify_payload(data):
+    """Convierte cualquier objeto a tipos nativos serializables"""
     try:
-        # 1. Preparar datos de venta (JSON)
-        items_data = [
-            {
-                "id": item['id'],
-                "name": item['name'],
-                "price": item['price'],
-                "quantity": item['qty'],
-                "total": item['price'] * item['qty']
-            } for item in items
-        ]
-        
-        count = sum(item['qty'] for item in items)
-        folio = f"WEB-{int(time.time())}"
-        
-        payload = {
-            "folio": folio,
-            "total": total,
-            "items_count": count,
-            "items_data": items_data, # JSONB
-            "payment_method": payment_method,
-            "status": "completed",
-            "source": "web", # IMPORTANTE: Marca origen web
-            "customer_name": customer_name,
-            "local_id": None # Esperando sync de escritorio
-        }
-        
-        # 2. Insertar Venta
-        supabase.table("sales").insert(payload).execute()
-        
-        # 3. Actualizar Stock en Nube (Inmediato visualmente)
-        for item in items:
-            current_stock = item['max_stock'] # Stock al momento de cargar
-            new_stock = current_stock - item['qty']
-            supabase.table("products").update({"stock": new_stock}).eq("id", item['id']).execute()
-            
-        return True, folio
+        return json.loads(json.dumps(data, cls=NpEncoder))
     except Exception as e:
-        return False, str(e)
+        print(f"Error purifying payload: {e}")
+        return data
 
-# --- UI ---
+# --- CONFIGURACIÓN ---
+st.set_page_config(page_title="VERTEX Cloud POS", page_icon="⚡", layout="wide")
 
-st.title("☁️ Vertex Cloud POS")
-st.markdown(f"*Sincronizado con Escritorio en tiempo real*")
+# --- CSS: ESTILO ESCRITORIO COMPACTO ---
+st.markdown("""
+<style>
+    /* Ajuste GLOBAL para iPad/Touch */
+    .block-container {
+        padding-top: 3rem !important;
+        padding-bottom: 5rem !important; /* Espacio para scroll */
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        max-width: 100% !important;
+    }
+    
+    /* Tipografía Legible */
+    html, body, [class*="css"] {
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+        font-size: 16px !important; /* Texto base más grande */
+        background-color: #f8fafc;
+    }
 
-# Tabs Principales
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "🛒 Punto de Venta", "📦 Inventario", "busts_in_silhouette: Clientes"])
+    /* Branding VERTEX Moderno */
+    .brand-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+    }
+    .brand-name {
+        font-weight: 800;
+        font-size: 24px;
+        color: #0f172a;
+        letter-spacing: -0.5px;
+    }
 
-# --- TAB 1: DASHBOARD ---
-with tab1:
-    if st.button('🔄 Actualizar Métricas'):
-        st.cache_data.clear()
-        st.rerun()
+    /* Botones de Navegación TÁCTILES */
+    .stButton > button {
+        border-radius: 12px !important;
+        font-weight: 600 !important;
+        height: 50px !important; /* Altura táctil mínima */
+        border: none !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        transition: all 0.2s ease !important;
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    }
 
+    /* Botones de Producto (Grilla) */
+    div[data-testid="column"] button {
+        height: 120px !important; /* Tarjetas altas */
+        background-color: white !important;
+        color: #334155 !important;
+        border: 1px solid #e2e8f0 !important;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        white-space: normal !important; /* Permitir 2 líneas */
+        line-height: 1.4 !important;
+    }
+
+    /* Highlight del Precio en Tarjeta */
+    div[data-testid="column"] button p {
+        font-size: 1.1em !important;
+    }
+
+    /* Input de Búsqueda ESTILO iOS */
+    input[type="text"] {
+        height: 55px !important;
+        border-radius: 12px !important;
+        font-size: 18px !important;
+        padding-left: 20px !important;
+        border: 2px solid #e2e8f0 !important;
+        background-color: white !important;
+    }
+    input[type="text"]:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+    }
+
+    /* Contenedores (Simulación de Glassmorphism/Cards) */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: white !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 16px !important;
+        padding: 15px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Títulos de Sección */
+    h1, h2, h3 {
+        color: #1e293b !important;
+        font-weight: 700 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# --- CONEXIÓN ---
+@st.cache_resource
+def get_supabase():
+    return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+
+supabase = get_supabase()
+
+# --- ESTADO DE SESIÓN ---
+if 'view' not in st.session_state: st.session_state.view = 'pos'
+if 'cart' not in st.session_state: st.session_state.cart = []
+if 'selected_client' not in st.session_state: st.session_state.selected_client = "Mostrador"
+
+# Cachear datos para búsqueda fluida (60s)
+@st.cache_data(ttl=60)
+def get_data(table):
     try:
-        # Obtener ventas de HOY (Web + Desktop)
-        response = supabase.table('sales').select("*").order('created_at', desc=True).limit(100).execute()
-        df_sales = pd.DataFrame(response.data)
+        res = supabase.table(table).select("*").execute()
+        return pd.DataFrame(res.data)
+    except: return pd.DataFrame()
+
+# --- HEADER / NAVEGACIÓN ---
+c_head_left, c_head_right = st.columns([1, 4])
+with c_head_left:
+    st.markdown('<div class="brand-section"><span class="brand-name">VERTEX</span></div>', unsafe_allow_html=True)
+
+with c_head_right:
+    n1, n2, n3, n4 = st.columns(4)
+    if n1.button("Punto de Venta", use_container_width=True): st.session_state.view = 'pos'
+    if n2.button("Articulos", use_container_width=True): st.session_state.view = 'articles'
+    if n3.button("Dashboard", use_container_width=True): st.session_state.view = 'dashboard'
+    if n4.button("Clientes", use_container_width=True): st.session_state.view = 'clients'
+
+st.divider()
+
+# --- VISTA: PUNTO DE VENTA ---
+if st.session_state.view == 'pos':
+    col_grid, col_ticket = st.columns([2.8, 1])
+    
+    with col_grid:
+        # Búsqueda en tiempo real (debounce 300ms)
+        from streamlit_keyup import st_keyup
+        search = st_keyup("Buscar...", placeholder="Buscar producto o codigo...", debounce=300, key="search_input", label_visibility="collapsed")
         
+        df_p = get_data("products")
+        if search:
+            # Soporte para lector de código de barras: 
+            # Si hay un match exacto por barcode, añadir al carrito directamente
+            exact_match = df_p[df_p['barcode'] == search.strip()]
+            if not exact_match.empty:
+                p = exact_match.iloc[0]
+                found = False
+                for item in st.session_state.cart:
+                    if item['id'] == p['id']:
+                        item['qty'] += 1
+                        found = True
+                        break
+                if not found:
+                    st.session_state.cart.append({
+                        "id": int(p['id']), "name": str(p['name']), "price": float(p['price']), "qty": 1, "barcode": str(p.get('barcode', ''))
+                    })
+                st.toast(f"Añadido: {p['name']}")
+                # Filtrar visualmente
+                df_p = df_p[df_p['name'].str.contains(search, case=False)]
+            else:
+                df_p = df_p[df_p['name'].str.contains(search, case=False) | df_p['barcode'].str.contains(search, case=False)]
+            
+            n_cols = 5
+            for i in range(0, len(df_p), n_cols):
+                cols = st.columns(n_cols)
+                for j in range(n_cols):
+                    if i + j < len(df_p):
+                        p = df_p.iloc[i + j]
+                        with cols[j]:
+                            label = f"{p['name'][:30]}\n\n**${p['price']:,.2f}**"
+                            if st.button(label, key=f"p_{p['id']}", use_container_width=True):
+                                found = False
+                                for item in st.session_state.cart:
+                                    if item['id'] == p['id']:
+                                        item['qty'] += 1
+                                        found = True
+                                        break
+                                if not found:
+                                    st.session_state.cart.append({
+                                        "id": int(p['id']), 
+                                        "name": str(p['name']), 
+                                        "price": float(p['price']), 
+                                        "qty": 1,
+                                        "barcode": str(p.get('barcode', ''))
+                                    })
+                                st.rerun()
+
+    with col_ticket:
+        # TARJETA 1: CLIENTE (ARRIBA)
+        with st.container(border=True):
+            st.markdown("**Cliente**")
+            c_label, c_btn = st.columns([3, 2])
+            c_label.write(st.session_state.selected_client)
+            with c_btn:
+                with st.popover("Cambiar", use_container_width=True):
+                    cust_df = get_data("customers")
+                    c_options = ["Mostrador"] + (cust_df['name'].tolist() if not cust_df.empty else [])
+                    search_c = st.selectbox("Elegir:", c_options)
+                    if st.button("Aplicar"):
+                        st.session_state.selected_client = search_c
+                        st.rerun()
+                    st.divider()
+                    new_c = st.text_input("Nuevo:")
+                    if st.button("Registrar"):
+                        supabase.table("customers").insert({"name": new_c}).execute()
+                        st.session_state.selected_client = new_c
+                        st.rerun()
+
+        # TARJETA 2: CARRITO (ABAJO)
+        with st.container(border=True):
+            st.markdown("**Carrito**")
+            if st.session_state.cart:
+                df_cart = pd.DataFrame(st.session_state.cart)
+                df_cart['Total'] = df_cart['price'] * df_cart['qty']
+                
+                st.dataframe(
+                    df_cart[['name', 'qty', 'Total']], 
+                    hide_index=True, 
+                    use_container_width=True,
+                    height=250 # Altura controlada para evitar scroll infinito
+                )
+                
+                # Calcular total
+                total = float(df_cart['Total'].sum())
+                st.markdown(f"<h3 style='text-align: right;'>Total: ${total:,.2f}</h3>", unsafe_allow_html=True)
+
+                if st.button("COBRAR", type="primary", use_container_width=True):
+                    folio = f"W-{int(time.time())}"
+                    
+                    try:
+                        # 1. Limpiar Carrito
+                        clean_cart = []
+                        for it in st.session_state.cart:
+                            clean_cart.append({
+                                "id": int(it['id']),
+                                "name": str(it['name']),
+                                "price": float(it['price']),
+                                "qty": int(it['qty']),
+                                "barcode": str(it.get('barcode', ''))
+                            })
+
+                        # 2. Preparar y Purificar Payload
+                        sale_data = purify_payload({
+                            "folio": folio,
+                            "total": float(total),
+                            "source": "web",
+                            "customer_name": str(st.session_state.selected_client),
+                            "items_data": clean_cart
+                        })
+
+                        # 3. Insertar
+                        supabase.table("sales").insert(sale_data).execute()
+                        
+                        st.session_state.cart = []
+                        st.success(f"Venta {folio} enviada. ¡Cocinando ticket!")
+                        time.sleep(1)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error al procesar: {str(e)}")
+                
+                if st.button("Limpiar", use_container_width=True):
+                    st.session_state.cart = []
+                    st.rerun()
+            else:
+                st.info("Ticket vacio")
+
+# --- OTRAS VISTAS (Dashboard, Articulos, Clientes) permanecen igual ---
+elif st.session_state.view == 'dashboard':
+    from datetime import datetime, timedelta
+    
+    st.subheader("📊 Inteligencia de Negocio")
+    
+    # --- FILTROS ---
+    c_flt1, c_flt2 = st.columns([1, 3])
+    with c_flt1:
+        range_opt = st.selectbox("Periodo", ["Hoy", "Esta Semana", "Este Mes", "Todo el Año"])
+    
+    # Calcular fechas
+    today = datetime.now()
+    if range_opt == "Hoy":
+        start_date = today.date()
+    elif range_opt == "Esta Semana":
+        start_date = (today - timedelta(days=today.weekday())).date()
+    elif range_opt == "Este Mes":
+        start_date = today.date().replace(day=1)
+    else:
+        start_date = today.date().replace(month=1, day=1)
+        
+    # --- CARGA DE DATOS ---
+    with st.spinner("Analizando finanzas..."):
+        df_sales = get_data("sales")
+        df_expenses = get_data("expenses")
+        
+        # Procesar Ventas
         if not df_sales.empty:
-            df_sales['created_at'] = pd.to_datetime(df_sales['created_at'])
-            mx_tz = pytz.timezone('America/Mexico_City')
-            df_sales['created_at'] = df_sales['created_at'].dt.tz_convert(mx_tz)
+            df_sales['date_dt'] = pd.to_datetime(df_sales['created_at'])
+            df_sales['date_only'] = df_sales['date_dt'].dt.date
+            # Filtrar
+            mask_s = df_sales['date_only'] >= start_date
+            df_s_filtered = df_sales.loc[mask_s].copy()
+        else:
+            df_s_filtered = pd.DataFrame(columns=['total', 'date_only'])
+
+        # Procesar Gastos
+        if not df_expenses.empty:
+            # Expenses date suele venir como YYYY-MM-DD string o ts
+            df_expenses['date_dt'] = pd.to_datetime(df_expenses['date'])
+            df_expenses['date_only'] = df_expenses['date_dt'].dt.date
+            # Filtrar
+            mask_e = df_expenses['date_only'] >= start_date
+            df_e_filtered = df_expenses.loc[mask_e].copy()
+        else:
+            df_e_filtered = pd.DataFrame(columns=['amount', 'category', 'date_only'])
+
+    if df_s_filtered.empty and df_e_filtered.empty:
+        st.info("No hay datos financieros para este periodo.")
+    else:
+        # --- KPIs FINANCIEROS ---
+        total_income = df_s_filtered['total'].sum() if not df_s_filtered.empty else 0
+        total_outcome = df_e_filtered['amount'].sum() if not df_e_filtered.empty else 0
+        balance = total_income - total_outcome
+        
+        # Margen simple (asumiendo que outcome son costos op + costos venta si se registran ahi)
+        # Ojo: Para utilidad real necesitamos Costo de Venta. Si no lo tenemos, esto es Cash Flow.
+        margin_pct = (balance / total_income * 100) if total_income > 0 else 0
+        
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("Ingresos", f"${total_income:,.2f}", f"{len(df_s_filtered)} Ops")
+        k2.metric("Egresos", f"${total_outcome:,.2f}", f"{len(df_e_filtered)} Movs", delta_color="inverse")
+        k3.metric("Flujo Neto", f"${balance:,.2f}", f"{margin_pct:.1f}% Margen", delta_color="normal" if balance >= 0 else "inverse")
+        ticket_prom = total_income / len(df_s_filtered) if not df_s_filtered.empty else 0
+        k4.metric("Ticket Promedio", f"${ticket_prom:,.2f}")
+        
+        st.divider()
+        
+        # --- GRÁFICOS ---
+        g1, g2 = st.columns([2, 1])
+        
+        with g1:
+            st.markdown("**Evolución Diaria (Ingresos vs Egresos)**")
+            # Agrupar por día
+            daily_income = df_s_filtered.groupby('date_only')['total'].sum().reset_index()
+            daily_income['Type'] = 'Ingreso'
+            daily_income.rename(columns={'total': 'Monto', 'date_only': 'Fecha'}, inplace=True)
             
-            today = get_mexico_time().date()
-            df_today = df_sales[df_sales['created_at'].dt.date == today]
+            daily_outcome = df_e_filtered.groupby('date_only')['amount'].sum().reset_index()
+            daily_outcome['Type'] = 'Egreso'
+            daily_outcome.rename(columns={'amount': 'Monto', 'date_only': 'Fecha'}, inplace=True)
             
-            # KPIS
-            col1, col2, col3, col4 = st.columns(4)
-            total_today = df_today['total'].sum()
-            count_today = len(df_today)
-            web_sales = len(df_today[df_today['source'] == 'web'])
+            df_chart = pd.concat([daily_income, daily_outcome])
             
-            col1.metric("Venta Total Hoy", format_currency(total_today))
-            col2.metric("Transacciones", count_today)
-            col3.metric("Ticket Promedio", format_currency(total_today/count_today) if count_today > 0 else "$0")
-            col4.metric("Ventas Web", web_sales)
-            
-            st.divider()
-            st.subheader("Últimas Ventas")
+            if not df_chart.empty:
+                fig = px.bar(df_chart, x='Fecha', y='Monto', color='Type', 
+                             barmode='group', color_discrete_map={'Ingreso': '#10b981', 'Egreso': '#ef4444'})
+                fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=300)
+                st.plotly_chart(fig, use_container_width=True)
+                
+        with g2:
+            st.markdown("**Desglose de Gastos**")
+            if not df_e_filtered.empty:
+                fig2 = px.pie(df_e_filtered, values='amount', names='category', hole=0.4)
+                fig2.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=300, showlegend=False)
+                st.plotly_chart(fig2, use_container_width=True)
+            else:
+                st.info("Sin gastos registrados")
+
+        # --- DETALLE RECIENTE ---
+        st.markdown("**Últimos Movimientos**")
+        # Mostrar ultimas 5 ventas y ultimos 5 gastos
+        t1, t2 = st.tabs(["Ventas Recientes", "Gastos Recientes"])
+        
+        with t1:
             st.dataframe(
-                df_today[['folio', 'customer_name', 'total', 'payment_method', 'source', 'created_at']].rename(columns={
-                    'source': 'Origen', 'customer_name': 'Cliente'
-                }),
+                df_s_filtered.sort_values('created_at', ascending=False).head(10)[['folio', 'total', 'payment_method', 'created_at']],
                 use_container_width=True, hide_index=True
             )
-        else:
-            st.info("Sin ventas recientes.")
             
-    except Exception as e:
-        st.error(f"Error cargando dashboard: {e}")
+        with t2:
+             if not df_e_filtered.empty:
+                st.dataframe(
+                    df_e_filtered.sort_values('date', ascending=False).head(10)[['category', 'description', 'amount', 'date']],
+                    use_container_width=True, hide_index=True
+                )
+             else:
+                 st.write("Sin registros.")
 
-# --- TAB 2: PUNTO DE VENTA (POS TÁCTIL) ---
-with tab2:
-    # CSS personalizado para botones grandes (Modo Táctil)
-    st.markdown("""
-    <style>
-    div[data-testid="stVerticalBlock"] > div[style*="flex-direction: column;"] > div[data-testid="stButton"] button {
-        height: 80px;
-        width: 100%;
-        border-radius: 10px;
-        border: 1px solid #e0e0e0;
-        background-color: #f8f9fa;
-        font-weight: bold;
-    }
-    div[data-testid="stVerticalBlock"] > div[style*="flex-direction: column;"] > div[data-testid="stButton"] button:hover {
-        border-color: #3182ce;
-        color: #3182ce;
-        background-color: #ebf8ff;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+elif st.session_state.view == 'articles':
+    st.subheader("Articulos")
+    df_art = get_data("products")
+    st.dataframe(df_art[['name', 'price', 'stock']], use_container_width=True, hide_index=True)
 
-    col_cart, col_products = st.columns([1, 2.5])
-    
-    # --- SECCIÓN DERECHA: CATÁLOGO (GRID) ---
-    with col_products:
-        c_search, c_filter = st.columns([3, 1])
-        search = c_search.text_input("🔍 Buscar...", label_visibility="collapsed", placeholder="Buscar producto...")
-        category_filter = c_filter.selectbox("Categoría", ["Todas"] + list(set(get_products()['category'].dropna().unique()) if not get_products().empty else []), label_visibility="collapsed")
-        
-        df_prods = get_products()
-        if not df_prods.empty:
-            # Filtrar
-            if search:
-                mask = df_prods['name'].str.contains(search, case=False) | df_prods['barcode'].str.contains(search, na=False)
-                df_prods = df_prods[mask]
-            
-            if category_filter != "Todas":
-                df_prods = df_prods[df_prods['category'] == category_filter]
-
-            # Paginación Grid (3 columnas)
-            cols_per_row = 3
-            rows = [df_prods.iloc[i:i+cols_per_row] for i in range(0, len(df_prods), cols_per_row)]
-            
-            for row in rows:
-                cols = st.columns(cols_per_row)
-                for i, (_, product) in enumerate(row.iterrows()):
-                    with cols[i]:
-                        # Card de Producto
-                        name_short = (product['name'][:30] + '..') if len(product['name']) > 30 else product['name']
-                        btn_label = f"{name_short}\n💲{product['price']}"
-                        
-                        if st.button(btn_label, key=f"add_{product['id']}", use_container_width=True):
-                            # Add to cart logic
-                            prod_dict = {
-                                "id": product['id'], 
-                                "name": product['name'], 
-                                "price": product['price'], 
-                                "qty": 1,
-                                "max_stock": product['stock']
-                            }
-                            
-                            found = False
-                            for item in st.session_state.cart:
-                                if item['id'] == prod_dict['id']:
-                                    item['qty'] += 1
-                                    found = True
-                                    break
-                            if not found:
-                                st.session_state.cart.append(prod_dict)
-                            st.toast(f"✅ {product['name']}")
-                            st.rerun()
-        else:
-            st.info("No hay productos. Agrega algunos en la pestaña Inventario.")
-
-    # --- SECCIÓN IZQUIERDA: CARRITO Y COBRO ---
-    with col_cart:
-        with st.container(border=True):
-            st.subheader(f"🛒 Ticket ({len(st.session_state.cart)})")
-            
-            if st.session_state.cart:
-                total_cart = 0
-                for i, item in enumerate(st.session_state.cart):
-                    subtotal = item['price'] * item['qty']
-                    total_cart += subtotal
-                    
-                    c1, c2, c3 = st.columns([4, 2, 1])
-                    c1.caption(f"{item['name']}")
-                    c2.markdown(f"**{item['qty']}** x ${item['price']}")
-                    if c3.button("❌", key=f"del_{i}"):
-                        st.session_state.cart.pop(i)
-                        st.rerun()
-                
-                st.divider()
-                st.markdown(f"<h3 style='text-align: right;'>Total: {format_currency(total_cart)}</h3>", unsafe_allow_html=True)
-                
-                # Formulario Copbro
-                with st.form("checkout_form"):
-                    customers_df = get_customers()
-                    client_list = ["Mostrador"] + customers_df['name'].tolist() if not customers_df.empty else ["Mostrador"]
-                    
-                    client_sel = st.selectbox("Cliente", client_list)
-                    sale_type = st.radio("Tipo Venta", ["Directa", "Pedido/Agendada"], horizontal=True)
-                    
-                    pay_method = st.selectbox("Pago", ["Efectivo", "Tarjeta", "Transferencia"])
-                    
-                    delivery_date = None
-                    notes = ""
-                    
-                    if sale_type == "Pedido/Agendada":
-                        delivery_date = st.date_input("Fecha Entrega")
-                        pay_method = "Pendiente/Anticipo" # Simplificación
-                        notes = st.text_input("Notas / Anticipo")
-                    
-                    if st.form_submit_button("✅ CONFIRMAR", type="primary"):
-                        # Adaptar create_sale para soportar pedidos
-                        # Nota: Necesitamos actualizar la BD para delivery_date
-                        success, msg = create_sale(st.session_state.cart, total_cart, client_sel, pay_method)
-                        if success:
-                            st.success("Operación Exitosa")
-                            st.session_state.cart = []
-                            time.sleep(1)
-                            st.rerun()
-                        else:
-                            st.error(msg)
-            else:
-                st.markdown("*Carrito Vacío*")
-                st.caption("Selecciona productos del panel derecho.")
-
-# --- TAB 3: INVENTARIO ---
-with tab3:
-    st.header("Gestión de Inventario")
-    
-    with st.expander("➕ Crear Nuevo Producto"):
-        with st.form("new_product_cloud"):
-            c1, c2 = st.columns(2)
-            name = c1.text_input("Nombre")
-            barcode = c1.text_input("Código Barras")
-            price = c2.number_input("Precio", min_value=0.0)
-            stock = c2.number_input("Stock Inicial", min_value=0, step=1)
-            
-            if st.form_submit_button("Guardar"):
-                if name:
-                    supabase.table("products").insert({
-                            "name": name, "barcode": barcode, 
-                            "price": price, "stock": stock,
-                            "local_id": None # Pendiente sync
-                    }).execute()
-                    st.success("Producto creado. Se descargará al escritorio pronto.")
-                else:
-                    st.error("Falta nombre.")
-
-    # Listado Defensivo
-    st.subheader("Productos existentes en Nube")
-    try:
-        df_inv = get_products()
-        if not df_inv.empty:
-            # Normalizar columnas necesarias
-            expected_cols = ['name', 'price', 'stock', 'barcode']
-            for c in expected_cols:
-                if c not in df_inv.columns:
-                    df_inv[c] = ""
-            
-            st.dataframe(
-                df_inv[expected_cols], 
-                use_container_width=True,
-                hide_index=True
-            )
-        else:
-            st.info("⚠️ El inventario está vacío.")
-    except Exception as e:
-        st.warning(f"No se pudo cargar la lista: {e}")
-
-# --- TAB 4: CLIENTES ---
-with tab4:
-    st.header("Directorio de Clientes")
-    
-    with st.expander("➕ Registrar Cliente"):
-        with st.form("new_customer"):
-            name = st.text_input("Nombre Completo")
-            email = st.text_input("Email")
-            phone = st.text_input("Teléfono")
-            rfc = st.text_input("RFC")
-            
-            if st.form_submit_button("Guardar Cliente"):
-                if name:
-                    supabase.table("customers").insert({
-                        "name": name, "email": email, "phone": phone, "rfc": rfc,
-                        "local_id": None
-                    }).execute()
-                    st.success("Cliente guardado en nube.")
-                else:
-                    st.error("El nombre es obligatorio")
-    
-    st.dataframe(get_customers()[['name', 'email', 'phone']], use_container_width=True)
+elif st.session_state.view == 'clients':
+    st.subheader("Clientes")
+    df_cl = get_data("customers")
+    st.dataframe(df_cl[['name', 'email', 'phone']], use_container_width=True, hide_index=True)
