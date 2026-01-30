@@ -25,13 +25,13 @@ def purify_payload(data):
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(
-    page_title="Vertex Mobility v6.8.1", 
+    page_title="Vertex Mobility v6.8.2", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS: V6.8.1 CLEAN & SPACED ---
+# --- CSS: V6.8.2 REFINED UI ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
@@ -75,7 +75,7 @@ st.markdown("""
         margin-top: 12px;
     }
 
-    /* BARRA DE BUSQUEDA LIMPIA Y CON ESPACIO */
+    /* BARRA DE BUSQUEDA LIMPIA */
     .stTextInput div[data-baseweb="input"] {
         background-color: transparent !important;
         border: none !important;
@@ -83,13 +83,12 @@ st.markdown("""
 
     .stTextInput input {
         border-radius: 12px !important;
-        border: none !important; /* Eliminamos borde */
-        background-color: #f1f5f9 !important; /* Fondo gris muy suave para ubicarla */
+        border: none !important;
+        background-color: #f1f5f9 !important;
         height: 50px !important;
         color: var(--text-dark) !important;
         font-size: 0.95rem !important;
         padding: 0 20px !important;
-        box-shadow: none !important;
     }
 
     .stTextInput input:focus {
@@ -98,12 +97,12 @@ st.markdown("""
         border: 1px solid #e2e8f0 !important;
     }
 
-    /* AJUSTE DE ESPACIO VERTICAL: Separar búsqueda de productos */
+    /* Espacio entre búsqueda y productos */
     div[data-testid="stVerticalBlock"] > div:has(.stTextInput) {
-        margin-bottom: 35px !important; /* Espacio extra para que no se encimen */
+        margin-bottom: 35px !important;
     }
 
-    /* Productos Estilo Pop-It con margen superior corregido */
+    /* Productos Estilo Pop-It */
     div[data-testid="column"] button {
         background: white !important;
         border: 1px solid #e2e8f0 !important;
@@ -112,11 +111,9 @@ st.markdown("""
         height: 140px !important;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
         transition: all 0.2s ease !important;
-        margin-top: 5px; /* Pequeño ajuste para asegurar separación */
     }
     div[data-testid="column"] button:active {
         transform: scale(0.96);
-        background-color: #f1f5f9 !important;
     }
 
     /* Paneles Redondeados */
@@ -124,6 +121,13 @@ st.markdown("""
         border-radius: var(--radius) !important;
         border: 1px solid #e2e8f0 !important;
         background: white !important;
+    }
+
+    /* Botón Dashboard Compacto */
+    .stButton > button {
+        border-radius: 12px !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
     }
 
     /* Dialogs */
@@ -153,7 +157,7 @@ def get_data(table):
         return pd.DataFrame(res.data)
     except: return pd.DataFrame()
 
-# --- DIALOGS (VENTANAS POP-IT) ---
+# --- DIALOGS ---
 @st.dialog("DASHBOARD DE ANALISIS")
 def show_dashboard_dialog():
     st.markdown("### RESUMEN DE OPERACIONES")
@@ -171,7 +175,7 @@ def show_dashboard_dialog():
         fig = px.area(daily, x='date', y='total', height=250, color_discrete_sequence=['#6366f1'])
         fig.update_layout(margin=dict(l=0,r=0,t=10,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig, use_container_width=True)
-    if st.button("CERRAR VENTANA", use_container_width=True):
+    if st.button("CERRAR"):
         st.rerun()
 
 @st.dialog("SELECCIONAR CLIENTE")
@@ -179,40 +183,36 @@ def show_client_dialog():
     st.markdown("### CATALOGO DE CLIENTES")
     df_c = get_data("customers")
     options = ["Mostrador"] + (df_c['name'].tolist() if not df_c.empty else [])
-    sel = st.selectbox("BUSCAR O ELEGIR:", options)
-    
-    st.divider()
+    sel = st.selectbox("ELEGIR:", options)
     if st.button("CONFIRMAR SELECCION", type="primary", use_container_width=True):
         st.session_state.selected_client = sel
         st.rerun()
-    if st.button("CANCELAR", use_container_width=True):
-        st.rerun()
 
-# --- HEADER ---
-header_col1, header_col2 = st.columns([2, 1])
-with header_col1:
+# --- HEADER V6.8.2 ---
+col_logo, col_v, col_dash = st.columns([1, 4, 1])
+with col_logo:
+    st.markdown('<div class="brand-title" style="margin-bottom:0;">VERTEX</div>', unsafe_allow_html=True)
+with col_v:
     st.markdown(f"""
-    <div class="brand-container">
-        <div style="display: flex; align-items: baseline; flex-wrap: wrap;">
-            <div class="brand-title">VERTEX</div>
-            <div style="background: #eff6ff; color: #3b82f6; padding: 4px 14px; border-radius: 30px; font-size: 0.7rem; font-weight: 800; margin-left: 15px; border: 1px solid #dbeafe;">V 6.8.1</div>
+        <div style="display: flex; align-items: center; height: 100%; padding-top: 15px;">
+            <div style="background: #eff6ff; color: #3b82f6; padding: 2px 10px; border-radius: 30px; font-size: 0.65rem; font-weight: 800; border: 1px solid #dbeafe;">V 6.8.2</div>
         </div>
-        <div class="brand-subtitle">MOVILIDAD E INTELIGENCIA DE NEGOCIO</div>
-    </div>
     """, unsafe_allow_html=True)
+with col_dash:
+    # Botón alineado a la derecha y con ancho natural del texto
+    _, btn_container = st.columns([1, 4])
+    with btn_container:
+        if st.button("DASHBOARD"):
+            show_dashboard_dialog()
 
-with header_col2:
-    st.write(" ")
-    if st.button("DASHBOARD", use_container_width=True):
-        show_dashboard_dialog()
+st.markdown('<div class="brand-subtitle">MOVILIDAD E INTELIGENCIA DE NEGOCIO</div>', unsafe_allow_html=True)
+st.write(" ")
 
 # --- VISTA PRINCIPAL ---
 col_main, col_side = st.columns([2.8, 1.2], gap="large")
 
 with col_main:
-    # BÚSQUEDA LIMPIA (Placeholder en minúsculas)
     search = st.text_input("buscar...", placeholder="escribe o escanea", label_visibility="collapsed")
-    
     df_p = get_data("products")
     
     if not df_p.empty:
@@ -224,16 +224,15 @@ with col_main:
                 if i + j < len(df_view):
                     p = df_view.iloc[i + j]
                     with cols[j]:
-                        label = f"{p['name'][:35].upper()}\n\n${p['price']:,.2f}"
-                        if st.button(label, key=f"p_it_{p['id']}", use_container_width=True):
+                        l = f"{p['name'][:35].upper()}\n\n${p['price']:,.2f}"
+                        if st.button(l, key=f"p_{p['id']}", use_container_width=True):
                             st.session_state.cart.append({"id": p['id'], "name": p['name'], "price": float(p['price']), "qty": 1})
                             st.rerun()
 
 with col_side:
     with st.container(border=True):
         st.markdown("**CLIENTE ACTUAL**")
-        st.markdown(f"<h2 style='margin:0;'>{st.session_state.selected_client.upper()}</h2>", unsafe_allow_html=True)
-        st.write(" ")
+        st.markdown(f"### {st.session_state.selected_client.upper()}")
         if st.button("SELECCIONAR CLIENTE", use_container_width=True):
             show_client_dialog()
 
@@ -244,28 +243,22 @@ with col_side:
             st.write("AGREGA ARTICULOS")
         else:
             total = sum(i['price'] * i['qty'] for i in st.session_state.cart)
-            # Re-implementamos scroll y botones de cantidad para v6.8.1
             for idx, item in enumerate(st.session_state.cart):
-                sub = item['price'] * item['qty']
                 st.markdown(f"**{item['name'].upper()}**")
                 c1, c2, c3, c4 = st.columns([1,1,1,2])
-                if c1.button("-", key=f"sub_{idx}"):
+                if c1.button("-", key=f"s_{idx}"):
                     if item['qty'] > 1: item['qty'] -= 1
                     else: st.session_state.cart.pop(idx)
                     st.rerun()
-                c2.markdown(f"<p style='text-align:center;'>{item['qty']}</p>", unsafe_allow_html=True)
-                if c3.button("+", key=f"add_{idx}"):
+                c2.write(item['qty'])
+                if c3.button("+", key=f"a_{idx}"):
                     item['qty'] += 1
                     st.rerun()
-                c4.markdown(f"<p style='text-align:right;'>${sub:,.2f}</p>", unsafe_allow_html=True)
+                c4.markdown(f"<p style='text-align:right;'>${item['price']*item['qty']:,.2f}</p>", unsafe_allow_html=True)
 
             st.divider()
             st.markdown(f"<h1 style='text-align: right; color: #6366f1;'>${total:,.2f}</h1>", unsafe_allow_html=True)
             if st.button("COMPLETAR VENTA", type="primary", use_container_width=True):
-                # Lógica simplificada para v6.8.1
-                st.success("ENVIANDO...")
-                st.session_state.cart = []
-                st.rerun()
-            if st.button("VACIAR", use_container_width=True):
-                st.session_state.cart = []
-                st.rerun()
+                 st.success("VENTA COMPLETADA")
+                 st.session_state.cart = []
+                 st.rerun()
