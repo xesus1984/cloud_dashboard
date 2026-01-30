@@ -25,13 +25,13 @@ def purify_payload(data):
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(
-    page_title="Vertex Mobility v6.6", 
+    page_title="Vertex Mobility v6.7", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS: DESIGN SYSTEM FLUIDO Y ADAPTATIVO (v6.6.1) ---
+# --- CSS: DESIGN SYSTEM "POP-IT" (v6.7) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
@@ -39,62 +39,41 @@ st.markdown("""
     :root {
         --primary: #6366f1;
         --secondary: #4f46e5;
-        --bg: #f8fafc;
-        --card-bg: rgba(255, 255, 255, 0.9);
-        --text-dark: #1e293b;
+        --bg: #fdfdfe;
+        --card-bg: #f8fafc;
+        --text-dark: #0f172a;
         --text-light: #64748b;
+        --radius: 24px;
     }
 
     /* Reset & Base */
     * { 
         font-family: 'Plus Jakarta Sans', sans-serif !important; 
-        box-sizing: border-box;
     }
 
     .stApp {
         background-color: var(--bg);
-        background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.03) 0px, transparent 50%), 
-                          radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.03) 0px, transparent 50%);
     }
 
     /* Ocultar UI de Streamlit */
     #MainMenu, footer, header {visibility: hidden;}
     .block-container { 
-        padding-top: 2rem !important; 
+        padding-top: 1.5rem !important; 
         padding-bottom: 2rem !important;
         padding-left: 5% !important;
         padding-right: 5% !important;
     }
 
-    /* --- RESPONSIVIDAD DINÁMICA --- */
-    
-    /* Para pantallas grandes (Monitores 21"+) */
-    @media (min-width: 1400px) {
-        .block-container { max-width: 1600px !important; }
-        .brand-title { font-size: 2.8rem !important; }
-        div[data-testid="column"] button { height: 160px !important; font-size: 1.1rem !important; }
-    }
-
-    /* Para tablets (iPad) */
-    @media (max-width: 1024px) {
-        .block-container { padding-left: 2% !important; padding-right: 2% !important; }
-        .brand-title { font-size: 1.8rem !important; }
-        div[data-testid="column"] button { height: 120px !important; padding: 0.8rem !important; }
-        h1 { font-size: 1.5rem !important; }
-    }
-
     /* Branding Section */
     .brand-container {
         padding: 0.5rem 0;
-        border-bottom: 1px solid #e2e8f0;
         margin-bottom: 2rem;
     }
     .brand-title {
         font-weight: 800;
         font-size: 2.2rem;
         color: var(--text-dark);
-        letter-spacing: -1.5px;
-        margin-bottom: -5px;
+        letter-spacing: -2px;
     }
     .brand-subtitle {
         font-weight: 600;
@@ -102,60 +81,92 @@ st.markdown("""
         color: var(--text-light);
         text-transform: uppercase;
         letter-spacing: 2px;
+        margin-top: -10px;
     }
     .version-badge {
-        background: #f1f5f9;
-        color: #475569;
-        padding: 4px 12px;
-        border-radius: 20px;
+        background: #eff6ff;
+        color: #3b82f6;
+        padding: 4px 14px;
+        border-radius: 30px;
         font-size: 0.7rem;
         font-weight: 800;
         margin-left: 15px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #dbeafe;
     }
 
-    /* Botones de Producto Adaptativos */
+    /* Botones de Producto Estilo Pop-It */
     div[data-testid="column"] button {
-        background: var(--card-bg) !important;
-        border: 1px solid rgba(226, 232, 240, 1) !important;
-        border-radius: 14px !important;
+        background: white !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: var(--radius) !important;
         width: 100% !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03) !important;
-        transition: all 0.2s ease !important;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        height: 140px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        color: var(--text-dark) !important;
         display: block !important;
+        margin-bottom: 10px;
     }
-    div[data-testid="column"] button:hover {
-        border-color: var(--primary) !important;
-        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.1) !important;
-        transform: translateY(-2px);
+    div[data-testid="column"] button:active {
+        transform: scale(0.96);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+        background-color: #f1f5f9 !important;
     }
 
-    /* Inputs y Formularios */
+    /* Fix: Barra de Búsqueda sin doble borde */
+    .search-box-container {
+        padding: 0 !important;
+        margin-bottom: 1.5rem;
+    }
     .stTextInput input {
-        border-radius: 12px !important;
-        border: 2px solid #e2e8f0 !important;
-        height: 50px !important;
+        border-radius: 18px !important;
+        border: 1px solid #e2e8f0 !important;
+        height: 60px !important;
+        font-size: 1.1rem !important;
+        font-weight: 500 !important;
         background: white !important;
+        color: var(--text-dark) !important;
+        padding-left: 25px !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.02) !important;
     }
     .stTextInput input:focus {
         border-color: var(--primary) !important;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.08) !important;
     }
 
-    /* Contenedores de Información */
-    [data-testid="stExpander"], [data-testid="stVerticalBlockBorderWrapper"] {
-        border-radius: 16px !important;
+    /* Contenedores con Esquinas Redondeadas Pop-It */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: var(--radius) !important;
         border: 1px solid #e2e8f0 !important;
         background: white !important;
-        overflow: hidden;
+        padding: 20px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.04) !important;
     }
 
-    /* Scrollbar Personalizada */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    /* Botones de Acción (Sidebar / General) */
+    .stButton > button {
+        border-radius: 16px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    /* Dialog/Modal Styling (Hack para Streamlit Dialogs) */
+    div[role="dialog"] {
+        border-radius: var(--radius) !important;
+    }
+    
+    /* Quitar el borde extra del contenedor de búsqueda que el usuario reportó */
+    div[data-testid="stVerticalBlock"] > div:has(.stTextInput) {
+        border: none !important;
+    }
+
+    .custom-card {
+        background: #f8fafc;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        border: 1px solid #e2e8f0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -172,7 +183,6 @@ supabase = get_supabase()
 # --- ESTADO DE SESIÓN ---
 if 'cart' not in st.session_state: st.session_state.cart = []
 if 'selected_client' not in st.session_state: st.session_state.selected_client = "Mostrador"
-if 'show_stats' not in st.session_state: st.session_state.show_stats = False
 
 # Cachear datos
 @st.cache_data(ttl=30)
@@ -183,56 +193,68 @@ def get_data(table):
         return pd.DataFrame(res.data)
     except: return pd.DataFrame()
 
-# --- HEADER ADAPTATIVO ---
+# --- DIALOGS (VENTANAS POP-IT) ---
+
+@st.dialog("INTELIGENCIA DE NEGOCIO")
+def show_dashboard_dialog():
+    st.markdown("### RESUMEN DE OPERACIONES")
+    df_s = get_data("sales")
+    if not df_s.empty:
+        df_s['date'] = pd.to_datetime(df_s['created_at'])
+        today_sales = df_s[df_s['date'].dt.date == datetime.now().date()]
+        total_today = today_sales['total'].sum()
+        
+        c1, c2 = st.columns(2)
+        c1.metric("VENTAS HOY", f"${total_today:,.2f}")
+        c2.metric("OPS", len(today_sales))
+        
+        daily = df_s.groupby(df_s['date'].dt.date)['total'].sum().reset_index()
+        fig = px.area(daily, x='date', y='total', height=250, color_discrete_sequence=['#6366f1'])
+        fig.update_layout(margin=dict(l=0,r=0,t=10,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("SIN REGISTROS PARA ANALIZAR")
+    if st.button("CERRAR VENTANA", use_container_width=True):
+        st.rerun()
+
+@st.dialog("SELECCIONAR CLIENTE")
+def show_client_dialog():
+    st.markdown("### CATALOGO DE CLIENTES")
+    df_c = get_data("customers")
+    options = ["Mostrador"] + (df_c['name'].tolist() if not df_c.empty else [])
+    sel = st.selectbox("BUSCAR O ELEGIR:", options)
+    
+    st.divider()
+    if st.button("CONFIRMAR SELECCION", type="primary", use_container_width=True):
+        st.session_state.selected_client = sel
+        st.rerun()
+    if st.button("CANCELAR", use_container_width=True):
+        st.rerun()
+
+# --- HEADER ---
 header_col1, header_col2 = st.columns([2, 1])
 with header_col1:
     st.markdown(f"""
     <div class="brand-container">
         <div style="display: flex; align-items: baseline; flex-wrap: wrap;">
             <div class="brand-title">VERTEX</div>
-            <div class="version-badge">V 6.6.1</div>
+            <div class="version-badge">V 6.7</div>
         </div>
         <div class="brand-subtitle">MOVILIDAD E INTELIGENCIA DE NEGOCIO</div>
     </div>
     """, unsafe_allow_html=True)
 
 with header_col2:
-    label_stats = "OCULTAR ANALISIS" if st.session_state.show_stats else "VER ANALISIS"
     st.write(" ") # Espaciador
-    if st.button(label_stats, use_container_width=True):
-        st.session_state.show_stats = not st.session_state.show_stats
+    if st.button("VER ANALISIS", use_container_width=True):
+        show_dashboard_dialog()
 
-# --- DASHBOARD INTEGRADO ---
-if st.session_state.show_stats:
-    with st.expander("RESUMEN DE OPERACIONES", expanded=True):
-        df_s = get_data("sales")
-        if not df_s.empty:
-            df_s['date'] = pd.to_datetime(df_s['created_at'])
-            today_sales = df_s[df_s['date'].dt.date == datetime.now().date()]
-            total_today = today_sales['total'].sum()
-            
-            # KPIs que se ajustan en columnas
-            k_cols = st.columns(4)
-            k_cols[0].metric("VENTAS HOY", f"${total_today:,.2f}")
-            k_cols[1].metric("OPERACIONES", len(today_sales))
-            
-            # Gráfica fluida
-            daily = df_s.groupby(df_s['date'].dt.date)['total'].sum().reset_index()
-            fig = px.area(daily, x='date', y='total', height=250, color_discrete_sequence=['#6366f1'])
-            fig.update_layout(margin=dict(l=0,r=0,t=10,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig, use_container_width=True)
-
-# --- LAYOUT PRINCIPAL (REACCIONA AL TAMAÑO) ---
-# En pantallas grandes el ratio es 3:1, en tablets se mantiene pero con márgenes ajustados
-col_main, col_side = st.columns([2.8, 1.2], gap="medium")
+# --- VISTA PRINCIPAL (POS) ---
+col_main, col_side = st.columns([2.8, 1.2], gap="large")
 
 with col_main:
-    # BÚSQUEDA
-    try:
-        from streamlit_keyup import st_keyup
-        search = st_keyup("BUSCAR PRODUCTOS...", placeholder="ESCRIBE NOMBRE O ESCANEA CODIGO", debounce=200, key="search_bar", label_visibility="collapsed")
-    except ImportError:
-        search = st.text_input("BUSCAR...", placeholder="ESCRIBE NOMBRE O ESCANEA CODIGO", label_visibility="collapsed")
+    # BÚSQUEDA (Fix: placeholder y quitar doble borde)
+    search = st.text_input("BUSCAR...", placeholder="ESCRIBE O ESCANEA", label_visibility="collapsed")
     
     df_p = get_data("products")
     
@@ -243,7 +265,6 @@ with col_main:
         else:
             df_view = df_p.head(28)
 
-        # Grilla Adaptativa: 4 columnas en monitor, 3 en iPad modo vertical (Streamlit maneja el stack)
         n_cols = 4
         for i in range(0, len(df_view), n_cols):
             cols = st.columns(n_cols)
@@ -251,7 +272,6 @@ with col_main:
                 if i + j < len(df_view):
                     p = df_view.iloc[i + j]
                     with cols[j]:
-                        # Botón que escala con el contenedor
                         label = f"{p['name'][:35].upper()}\n\n${p['price']:,.2f}"
                         if st.button(label, key=f"btn_{p['id']}", use_container_width=True):
                             found = False
@@ -270,19 +290,13 @@ with col_main:
         st.info("CATALOGO VACIO - SINCRONIZA DESDE ESCRITORIO")
 
 with col_side:
-    # CLIENTE
+    # CLIENTE (Pop-It Style)
     with st.container(border=True):
         st.markdown("**CLIENTE ACTUAL**")
-        sc1, sc2 = st.columns([2, 1])
-        sc1.subheader(st.session_state.selected_client.upper())
-        with sc2:
-            with st.popover("DATOS", use_container_width=True):
-                df_c = get_data("customers")
-                options = ["Mostrador"] + (df_c['name'].tolist() if not df_c.empty else [])
-                sel = st.selectbox("ELEGIR:", options)
-                if st.button("OK"):
-                    st.session_state.selected_client = sel
-                    st.rerun()
+        st.markdown(f"<h2 style='margin:0; color:#1e293b;'>{st.session_state.selected_client.upper()}</h2>", unsafe_allow_html=True)
+        st.write(" ")
+        if st.button("SELECCIONAR CLIENTE", use_container_width=True):
+            show_client_dialog()
 
     # CARRITO (CARRITO FLUIDO)
     st.write(" ")
@@ -292,7 +306,6 @@ with col_side:
             st.write("AGREGA ARTICULOS")
         else:
             total = 0
-            # Contenedor con scroll si hay muchos items
             for idx, item in enumerate(st.session_state.cart):
                 sub = item['price'] * item['qty']
                 total += sub
@@ -304,16 +317,16 @@ with col_side:
                         if item['qty'] > 1: item['qty'] -= 1
                         else: st.session_state.cart.pop(idx)
                         st.rerun()
-                    aq2.markdown(f"<p style='text-align:center;'>{item['qty']}</p>", unsafe_allow_html=True)
+                    aq2.markdown(f"<p style='text-align:center; padding-top:4px;'>{item['qty']}</p>", unsafe_allow_html=True)
                     if aq3.button(" + ", key=f"p_{idx}"):
                         item['qty'] += 1
                         st.rerun()
                     ap1.markdown(f"<p style='text-align:right; font-weight:800;'>${sub:,.2f}</p>", unsafe_allow_html=True)
             
             st.divider()
-            st.markdown(f"<h2 style='text-align: right; color: var(--primary);'>TOTAL: ${total:,.2f}</h2>", unsafe_allow_html=True)
+            st.markdown(f"<h1 style='text-align: right; color: var(--primary);'>${total:,.2f}</h1>", unsafe_allow_html=True)
             
-            if st.button("CONFIRMAR VENTA", type="primary", use_container_width=True):
+            if st.button("COMPLETAR VENTA", type="primary", use_container_width=True):
                 if supabase:
                     with st.spinner("PROCESANDO..."):
                         sale_data = purify_payload({
