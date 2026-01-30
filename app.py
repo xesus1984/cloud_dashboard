@@ -26,13 +26,13 @@ def purify_payload(data):
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(
-    page_title="Vertex Mobility v7.1.4", 
+    page_title="Vertex Mobility v7.2", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS: V7.1.4 RECOVERED DASHBOARD ---
+# --- CSS: V7.2 CHECKOUT EXPERIENCE ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;600;800&display=swap');
@@ -84,22 +84,9 @@ st.markdown("""
     }
 
     /* RELOJ MEXICO */
-    .clock-container {
-        text-align: center;
-        padding-top: 10px;
-    }
-    .clock-time {
-        font-size: 1.25rem;
-        font-weight: 800;
-        color: var(--text-dark);
-        margin: 0;
-    }
-    .clock-date {
-        font-size: 0.75rem;
-        font-weight: 400;
-        color: var(--text-light);
-        margin-top: -2px;
-    }
+    .clock-container { text-align: center; padding-top: 10px; }
+    .clock-time { font-size: 1.25rem; font-weight: 800; color: var(--text-dark); margin: 0; }
+    .clock-date { font-size: 0.75rem; font-weight: 400; color: var(--text-light); margin-top: -2px; }
 
     /* CARRITO */
     .ticket-header {
@@ -111,11 +98,20 @@ st.markdown("""
         margin-bottom: 8px !important;
         padding-bottom: 4px !important;
     }
+    .ticket-item-text { font-size: 0.75rem !important; font-weight: 400 !important; color: var(--text-dark); }
 
-    .ticket-item-text {
-        font-size: 0.75rem !important;
-        font-weight: 400 !important;
-        color: var(--text-dark);
+    /* BOTONES PASTEL */
+    div.stButton > button[kind="primary"] {
+        background-color: var(--pastel-red) !important;
+        color: var(--text-red) !important;
+        border: 1px solid rgba(230, 57, 70, 0.15) !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Dialog Styling */
+    div[role="dialog"] {
+        border-radius: var(--radius) !important;
+        border: 1px solid #e2e8f0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -142,50 +138,55 @@ def get_data(table):
         return pd.DataFrame(res.data)
     except: return pd.DataFrame()
 
-# --- DIALOGS (RESTAURADOS) ---
+# --- DIALOGS ---
+@st.dialog("Finalizar Venta")
+def show_checkout_dialog(total):
+    st.markdown(f"<div style='text-align:center;'><p style='margin:0; color:var(--text-light);'>Total A Pagar</p><h1 style='color:var(--primary); font-size:3.5rem; margin:0;'>${total:,.2f}</h1></div>", unsafe_allow_html=True)
+    
+    st.write(" ")
+    recibido = st.number_input("Dinero Recibido", min_value=0.0, step=1.0, value=total, format="%.2f")
+    
+    cambio = recibido - total
+    
+    if cambio >= 0:
+        st.markdown(f"<div style='background:#f8fafc; padding:15px; border-radius:15px; text-align:center; margin-top:10px;'><p style='margin:0; font-size:0.8rem; color:var(--text-light);'>Cambio A Entregar</p><h2 style='margin:0; color:#10b981;'>${cambio:,.2f}</h2></div>", unsafe_allow_html=True)
+    else:
+        st.error(f"Faltan ${abs(cambio):,.2f}")
+
+    st.write(" ")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("✅ PAGAR", use_container_width=True, type="primary"):
+            st.success("¡Venta Completada!")
+            st.session_state.cart = []
+            time.sleep(1)
+            st.rerun()
+    with col2:
+        if st.button("📅 AGENDAR", use_container_width=True):
+            st.info("Pedido Agendado")
+            st.session_state.cart = []
+            time.sleep(1)
+            st.rerun()
+    
+    if st.button("CANCELAR", use_container_width=True, key="cancel_checkout"):
+        st.rerun()
+
 @st.dialog("Dashboard")
 def show_dashboard_dialog():
     st.markdown("### Análisis De Ventas")
     df_s = get_data("sales")
-    
     if not df_s.empty:
-        # Procesar datos
         df_s['date'] = pd.to_datetime(df_s['created_at'])
-        # Aseguramos zona horaria para comparación
         tz_mx = pytz.timezone('America/Mexico_City')
         today = datetime.now(tz_mx).date()
-        
         today_sales = df_s[df_s['date'].dt.date == today]
-        total_today = today_sales['total'].sum()
-        count_today = len(today_sales)
-        
-        # Métricas principales
         c1, c2 = st.columns(2)
-        c1.metric("Ventas Hoy", f"${total_today:,.2f}")
-        c2.metric("Operaciones", count_today)
-        
-        st.write(" ")
-        st.markdown("**Tendencia De Ventas (Últimos Días)**")
-        
-        # Histórico diario
+        c1.metric("Ventas Hoy", f"${today_sales['total'].sum():,.2f}")
+        c2.metric("Operaciones", len(today_sales))
         daily = df_s.groupby(df_s['date'].dt.date)['total'].sum().reset_index()
-        daily.columns = ['Fecha', 'Total']
-        
-        fig = px.area(daily, x='Fecha', y='Total', height=250, color_discrete_sequence=['#6366f1'])
-        fig.update_layout(
-            margin=dict(l=0,r=0,t=0,b=0),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            xaxis_title=None,
-            yaxis_title=None
-        )
+        fig = px.area(daily, x='date', y='total', height=250, color_discrete_sequence=['#6366f1'])
         st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("Aún No Hay Datos De Ventas Para Mostrar.")
-
-    st.write(" ")
-    if st.button("Cerrar Ventana", use_container_width=True):
-        st.rerun()
+    if st.button("Cerrar", use_container_width=True): st.rerun()
 
 @st.dialog("Clientes")
 def show_client_dialog():
@@ -193,17 +194,17 @@ def show_client_dialog():
     df_c = get_data("customers")
     options = ["Mostrador"] + (df_c['name'].tolist() if not df_c.empty else [])
     sel = st.selectbox("Elegir Cliente:", options)
-    if st.button("Confirmar Selección", type="primary", use_container_width=True):
+    if st.button("Confirmar", type="primary", use_container_width=True):
         st.session_state.selected_client = sel
         st.rerun()
 
-# --- HEADER v7.1.4 ---
+# --- HEADER v7.2 ---
 col_brand, col_clock, col_action = st.columns([2, 2, 2])
 with col_brand:
     st.markdown(f"""
         <div style="display: flex; align-items: baseline;">
             <div class="brand-title">Vertex</div>
-            <div class="version-badge">Versión 7.1.4</div>
+            <div class="version-badge">Versión 7.2</div>
         </div>
         <div style="font-size:0.7rem; color:var(--text-light); text-transform:uppercase;">Movilidad E Inteligencia De Negocio</div>
     """, unsafe_allow_html=True)
@@ -275,5 +276,6 @@ with col_s:
         f2.markdown(f"<h3 style='text-align:right; color:#6366f1; margin:0;'>${total:,.2f}</h3>", unsafe_allow_html=True)
         st.write(" ")
         if st.button("Confirmar Venta", type="primary", use_container_width=True):
-            if total > 0: st.session_state.cart = []; st.rerun()
+            if total > 0:
+                show_checkout_dialog(total)
         if st.button("Vaciar", use_container_width=True): st.session_state.cart = []; st.rerun()
