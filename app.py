@@ -25,13 +25,13 @@ def purify_payload(data):
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(
-    page_title="Vertex Mobility v6.7.2", 
+    page_title="Vertex Mobility v6.7.3", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS: DESIGN SYSTEM "POP-IT" (v6.7.2) ---
+# --- CSS: V6.7.3 REFINE ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
@@ -43,23 +43,16 @@ st.markdown("""
         --card-bg: #f8fafc;
         --text-dark: #0f172a;
         --text-light: #64748b;
-        --radius: 24px; /* Radio consistente para el estilo Pop-It */
+        --radius: 24px;
     }
 
-    /* Reset & Base */
-    * { 
-        font-family: 'Plus Jakarta Sans', sans-serif !important; 
-    }
-
-    .stApp {
-        background-color: var(--bg);
-    }
+    * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+    .stApp { background-color: var(--bg); }
 
     /* Ocultar UI de Streamlit */
     #MainMenu, footer, header {visibility: hidden;}
     .block-container { 
         padding-top: 1.5rem !important; 
-        padding-bottom: 2rem !important;
         padding-left: 5% !important;
         padding-right: 5% !important;
     }
@@ -67,7 +60,7 @@ st.markdown("""
     /* Branding Section */
     .brand-container {
         padding: 0.5rem 0;
-        margin-bottom: 2rem;
+        margin-bottom: 2.5rem;
     }
     .brand-title {
         font-weight: 800;
@@ -81,7 +74,7 @@ st.markdown("""
         color: var(--text-light);
         text-transform: uppercase;
         letter-spacing: 2px;
-        margin-top: 8px; /* Espacio ajustado entre título y subtítulo */
+        margin-top: 12px; /* Más separación del título */
     }
     .version-badge {
         background: #eff6ff;
@@ -94,7 +87,32 @@ st.markdown("""
         border: 1px solid #dbeafe;
     }
 
-    /* Botones de Producto Estilo Pop-It */
+    /* FIX TOTAL BARRA DE BUSQUEDA */
+    /* Eliminar cualquier fondo o borde fantasma del contenedor de Streamlit */
+    div[data-testid="stVerticalBlock"] > div:has(.stTextInput) {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+    
+    .stTextInput > div {
+        background-color: transparent !important;
+        border: none !important;
+    }
+
+    .stTextInput input {
+        border-radius: 18px !important; /* Redondeo simétrico y equilibrado */
+        border: 1px solid #e2e8f0 !important;
+        height: 55px !important;
+        font-size: 1rem !important;
+        background: white !important;
+        color: var(--text-dark) !important;
+        padding-left: 20px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
+    }
+
+    /* Productos Estilo Pop-It */
     div[data-testid="column"] button {
         background: white !important;
         border: 1px solid #e2e8f0 !important;
@@ -102,59 +120,23 @@ st.markdown("""
         width: 100% !important;
         height: 140px !important;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        transition: all 0.2s ease !important;
         color: var(--text-dark) !important;
-        display: block !important;
-        margin-bottom: 10px;
     }
     div[data-testid="column"] button:active {
         transform: scale(0.96);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
         background-color: #f1f5f9 !important;
     }
 
-    /* Fix: Barra de Búsqueda con redondeo Pop-It */
-    .stTextInput input {
-        border-radius: var(--radius) !important; /* Ahora coincide con el resto de la app */
-        border: 1px solid #e2e8f0 !important;
-        height: 60px !important;
-        font-size: 1.1rem !important;
-        font-weight: 500 !important;
-        background: white !important;
-        color: var(--text-dark) !important;
-        padding-left: 25px !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.02) !important;
-    }
-    .stTextInput input:focus {
-        border-color: var(--primary) !important;
-        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.08) !important;
-    }
-
-    /* Contenedores con Esquinas Redondeadas Pop-It */
+    /* Paneles Laterales */
     [data-testid="stVerticalBlockBorderWrapper"] {
         border-radius: var(--radius) !important;
         border: 1px solid #e2e8f0 !important;
-        background: white !important;
-        padding: 20px !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.04) !important;
     }
 
-    /* Botones de Acción */
-    .stButton > button {
-        border-radius: 16px !important;
-        font-weight: 700 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.5px !important;
-    }
-
-    /* Dialog/Modal Styling */
-    div[role="dialog"] {
-        border-radius: var(--radius) !important;
-    }
-    
-    div[data-testid="stVerticalBlock"] > div:has(.stTextInput) {
-        border: none !important;
-    }
+    /* Dialogs */
+    div[role="dialog"] { border-radius: var(--radius) !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -200,8 +182,6 @@ def show_dashboard_dialog():
         fig = px.area(daily, x='date', y='total', height=250, color_discrete_sequence=['#6366f1'])
         fig.update_layout(margin=dict(l=0,r=0,t=10,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("SIN REGISTROS PARA ANALIZAR")
     if st.button("CERRAR VENTANA", use_container_width=True):
         st.rerun()
 
@@ -226,14 +206,14 @@ with header_col1:
     <div class="brand-container">
         <div style="display: flex; align-items: baseline; flex-wrap: wrap;">
             <div class="brand-title">VERTEX</div>
-            <div class="version-badge">V 6.7.2</div>
+            <div class="version-badge">V 6.7.3</div>
         </div>
         <div class="brand-subtitle">MOVILIDAD E INTELIGENCIA DE NEGOCIO</div>
     </div>
     """, unsafe_allow_html=True)
 
 with header_col2:
-    st.write(" ") # Espaciador
+    st.write(" ") 
     if st.button("DASHBOARD", use_container_width=True):
         show_dashboard_dialog()
 
@@ -241,7 +221,7 @@ with header_col2:
 col_main, col_side = st.columns([2.8, 1.2], gap="large")
 
 with col_main:
-    # BÚSQUEDA
+    # BÚSQUEDA (Fix aplicado en CSS)
     search = st.text_input("BUSCAR...", placeholder="ESCRIBE O ESCANEA", label_visibility="collapsed")
     
     df_p = get_data("products")
@@ -275,7 +255,7 @@ with col_main:
                                 })
                             st.rerun()
     else:
-        st.info("CATALOGO VACIO - SINCRONIZA DESDE ESCRITORIO")
+        st.info("CATALOGO VACIO")
 
 with col_side:
     # CLIENTE
@@ -327,7 +307,7 @@ with col_side:
                             "created_at": datetime.now().isoformat()
                         })
                         try:
-                            supabase.table("sales").insert(sale_data).execute()
+                            supabase.table( "sales").insert(sale_data).execute()
                             st.session_state.cart = []
                             st.balloons()
                             st.success("COMPLETADO")
