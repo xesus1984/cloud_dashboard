@@ -287,18 +287,26 @@ with tab3:
                 else:
                     st.error("Falta nombre.")
 
-    # Listado
-    st.subheader("Productos existentes")
-    df_inv = get_products()
-    if not df_inv.empty:
-        # Asegurar que existan las columnas para evitar errores si la DB es vieja
-        cols = ['name', 'price', 'stock', 'barcode']
-        for col in cols:
-            if col not in df_inv.columns:
-                df_inv[col] = None # Rellenar columnas faltantes
-        st.dataframe(df_inv[cols], use_container_width=True)
-    else:
-        st.info("⚠️ El inventario en la nube está vacío. Crea productos aquí o sincroniza desde tu caja.")
+    # Listado Defensivo
+    st.subheader("Productos existentes en Nube")
+    try:
+        df_inv = get_products()
+        if not df_inv.empty:
+            # Normalizar columnas necesarias
+            expected_cols = ['name', 'price', 'stock', 'barcode']
+            for c in expected_cols:
+                if c not in df_inv.columns:
+                    df_inv[c] = ""
+            
+            st.dataframe(
+                df_inv[expected_cols], 
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.info("⚠️ El inventario está vacío.")
+    except Exception as e:
+        st.warning(f"No se pudo cargar la lista: {e}")
 
 # --- TAB 4: CLIENTES ---
 with tab4:
