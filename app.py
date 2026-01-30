@@ -25,13 +25,13 @@ def purify_payload(data):
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(
-    page_title="Vertex Mobility v6.7", 
+    page_title="Vertex Mobility v6.7.2", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS: DESIGN SYSTEM "POP-IT" (v6.7) ---
+# --- CSS: DESIGN SYSTEM "POP-IT" (v6.7.2) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
@@ -43,7 +43,7 @@ st.markdown("""
         --card-bg: #f8fafc;
         --text-dark: #0f172a;
         --text-light: #64748b;
-        --radius: 24px;
+        --radius: 24px; /* Radio consistente para el estilo Pop-It */
     }
 
     /* Reset & Base */
@@ -81,7 +81,7 @@ st.markdown("""
         color: var(--text-light);
         text-transform: uppercase;
         letter-spacing: 2px;
-        margin-top: -10px;
+        margin-top: 8px; /* Espacio ajustado entre título y subtítulo */
     }
     .version-badge {
         background: #eff6ff;
@@ -113,13 +113,9 @@ st.markdown("""
         background-color: #f1f5f9 !important;
     }
 
-    /* Fix: Barra de Búsqueda sin doble borde */
-    .search-box-container {
-        padding: 0 !important;
-        margin-bottom: 1.5rem;
-    }
+    /* Fix: Barra de Búsqueda con redondeo Pop-It */
     .stTextInput input {
-        border-radius: 18px !important;
+        border-radius: var(--radius) !important; /* Ahora coincide con el resto de la app */
         border: 1px solid #e2e8f0 !important;
         height: 60px !important;
         font-size: 1.1rem !important;
@@ -143,7 +139,7 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0,0,0,0.04) !important;
     }
 
-    /* Botones de Acción (Sidebar / General) */
+    /* Botones de Acción */
     .stButton > button {
         border-radius: 16px !important;
         font-weight: 700 !important;
@@ -151,21 +147,13 @@ st.markdown("""
         letter-spacing: 0.5px !important;
     }
 
-    /* Dialog/Modal Styling (Hack para Streamlit Dialogs) */
+    /* Dialog/Modal Styling */
     div[role="dialog"] {
         border-radius: var(--radius) !important;
     }
     
-    /* Quitar el borde extra del contenedor de búsqueda que el usuario reportó */
     div[data-testid="stVerticalBlock"] > div:has(.stTextInput) {
         border: none !important;
-    }
-
-    .custom-card {
-        background: #f8fafc;
-        border-radius: var(--radius);
-        padding: 1.5rem;
-        border: 1px solid #e2e8f0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -195,7 +183,7 @@ def get_data(table):
 
 # --- DIALOGS (VENTANAS POP-IT) ---
 
-@st.dialog("INTELIGENCIA DE NEGOCIO")
+@st.dialog("DASHBOARD DE ANALISIS")
 def show_dashboard_dialog():
     st.markdown("### RESUMEN DE OPERACIONES")
     df_s = get_data("sales")
@@ -238,7 +226,7 @@ with header_col1:
     <div class="brand-container">
         <div style="display: flex; align-items: baseline; flex-wrap: wrap;">
             <div class="brand-title">VERTEX</div>
-            <div class="version-badge">V 6.7</div>
+            <div class="version-badge">V 6.7.2</div>
         </div>
         <div class="brand-subtitle">MOVILIDAD E INTELIGENCIA DE NEGOCIO</div>
     </div>
@@ -246,14 +234,14 @@ with header_col1:
 
 with header_col2:
     st.write(" ") # Espaciador
-    if st.button("VER ANALISIS", use_container_width=True):
+    if st.button("DASHBOARD", use_container_width=True):
         show_dashboard_dialog()
 
 # --- VISTA PRINCIPAL (POS) ---
 col_main, col_side = st.columns([2.8, 1.2], gap="large")
 
 with col_main:
-    # BÚSQUEDA (Fix: placeholder y quitar doble borde)
+    # BÚSQUEDA
     search = st.text_input("BUSCAR...", placeholder="ESCRIBE O ESCANEA", label_visibility="collapsed")
     
     df_p = get_data("products")
@@ -290,7 +278,7 @@ with col_main:
         st.info("CATALOGO VACIO - SINCRONIZA DESDE ESCRITORIO")
 
 with col_side:
-    # CLIENTE (Pop-It Style)
+    # CLIENTE
     with st.container(border=True):
         st.markdown("**CLIENTE ACTUAL**")
         st.markdown(f"<h2 style='margin:0; color:#1e293b;'>{st.session_state.selected_client.upper()}</h2>", unsafe_allow_html=True)
@@ -298,7 +286,7 @@ with col_side:
         if st.button("SELECCIONAR CLIENTE", use_container_width=True):
             show_client_dialog()
 
-    # CARRITO (CARRITO FLUIDO)
+    # CARRITO
     st.write(" ")
     with st.container(border=True):
         st.markdown("**RESUMEN DE COMPRA**")
