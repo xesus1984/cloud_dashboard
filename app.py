@@ -31,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS: ESTILO PROFESIONAL "UNIFIED UI" ---
+# --- CSS: ESTILO PROFESIONAL "UNIFIED UI" SIN ICONOS ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
@@ -118,17 +118,6 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
     }
 
-    /* Panel Derecho (Carrito) */
-    .sticky-panel {
-        background: white;
-        border-left: 1px solid #e2e8f0;
-        height: 100vh;
-        position: fixed;
-        right: 0;
-        top: 0;
-        padding: 2rem;
-    }
-
     .card-glass {
         background: white !important;
         border: 1px solid #e2e8f0 !important;
@@ -154,7 +143,6 @@ def get_supabase():
     try:
         return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
     except Exception as e:
-        st.error(f"Error de conexión: Configura SECRETS en Streamlit Cloud. {e}")
         return None
 
 supabase = get_supabase()
@@ -174,43 +162,41 @@ def get_data(table):
     except: return pd.DataFrame()
 
 # --- ENCABEZADO (BRANDING) ---
-col_brand, col_nav = st.columns([3, 1])
+col_brand, col_nav = st.columns([3, 1.2])
 with col_brand:
     st.markdown(f"""
     <div class="brand-container">
         <div style="display: flex; align-items: baseline;">
             <div class="brand-title">VERTEX</div>
-            <div class="version-badge">v6.6</div>
+            <div class="version-badge">V 6.6</div>
         </div>
-        <div class="brand-subtitle">Soluciones de Movilidad e Inteligencia</div>
+        <div class="brand-subtitle">SOLUCIONES DE MOVILIDAD E INTELIGENCIA</div>
     </div>
     """, unsafe_allow_html=True)
 
 with col_nav:
-    if st.button("📊 " + ("Ocultar Dashboard" if st.session_state.show_stats else "Ver Dashboard"), use_container_width=True):
+    label_stats = "OCULTAR DASHBOARD" if st.session_state.show_stats else "VER DASHBOARD"
+    if st.button(label_stats, use_container_width=True):
         st.session_state.show_stats = not st.session_state.show_stats
 
 # --- PANEL DE DASHBOARD (INTEGRADO) ---
 if st.session_state.show_stats:
-    with st.expander("📊 RESUMEN EJECUTIVO (BI)", expanded=True):
+    with st.expander("RESUMEN EJECUTIVO DE NEGOCIO", expanded=True):
         df_s = get_data("sales")
-        df_e = get_data("expenses")
-        
         if not df_s.empty:
             df_s['date'] = pd.to_datetime(df_s['created_at'])
             today_sales = df_s[df_s['date'].dt.date == datetime.now().date()]
             total_today = today_sales['total'].sum()
             
             k1, k2, k3, k4 = st.columns(4)
-            k1.metric("Ventas Hoy", f"${total_today:,.2f}", f"{len(today_sales)} ops")
+            k1.metric("VENTAS HOY", f"${total_today:,.2f}", f"{len(today_sales)} OPS")
             
-            # Gráfico rápido
             daily = df_s.groupby(df_s['date'].dt.date)['total'].sum().reset_index()
-            fig = px.area(daily, x='date', y='total', title="Tendencia de Ingresos", height=200, color_discrete_sequence=['#6366f1'])
-            fig.update_layout(margin=dict(l=0,r=0,t=30,b=0), xaxis_title=None, yaxis_title=None)
+            fig = px.area(daily, x='date', y='total', height=200, color_discrete_sequence=['#6366f1'])
+            fig.update_layout(margin=dict(l=0,r=0,t=10,b=0), xaxis_title=None, yaxis_title=None)
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("Sin datos suficientes para el Dashboard.")
+            st.info("SIN DATOS FINANCIEROS DISPONIBLES")
 
 # --- VISTA PRINCIPAL (POS) ---
 col_grid, col_ticket = st.columns([2.5, 1], gap="large")
@@ -219,21 +205,19 @@ with col_grid:
     # 🔎 SECCIÓN DE BÚSQUEDA
     try:
         from streamlit_keyup import st_keyup
-        search = st_keyup("Busca por nombre o código de barras...", placeholder="Ej: Jabon, Taza, 750...", debounce=200, key="search_bar", label_visibility="collapsed")
+        search = st_keyup("BUSCAR PRODUCTO O CODIGO...", placeholder="ESCRIBE PARA FILTRAR EL CATALOGO", debounce=200, key="search_bar", label_visibility="collapsed")
     except ImportError:
-        search = st.text_input("Buscador...", placeholder="Busca por nombre o código de barras...", label_visibility="collapsed")
+        search = st.text_input("BUSCAR...", placeholder="ESCRIBE PARA FILTRAR EL CATALOGO", label_visibility="collapsed")
     
     df_p = get_data("products")
     
     if not df_p.empty:
-        # Filtrado
         if search:
             mask = df_p['name'].str.contains(search, case=False) | df_p['barcode'].str.contains(search, case=False)
             df_view = df_p[mask].head(24)
         else:
             df_view = df_p.head(24)
 
-        # Grilla de Productos
         n_cols = 4
         for i in range(0, len(df_view), n_cols):
             cols = st.columns(n_cols)
@@ -241,10 +225,8 @@ with col_grid:
                 if i + j < len(df_view):
                     p = df_view.iloc[i + j]
                     with cols[j]:
-                        # Botón Táctil
-                        label = f"{p['name'][:30]}\n\n${p['price']:,.2f}"
+                        label = f"{p['name'][:30].upper()}\n\n${p['price']:,.2f}"
                         if st.button(label, key=f"btn_{p['id']}", use_container_width=True):
-                            # Lógica Carrito
                             found = False
                             for item in st.session_state.cart:
                                 if item['id'] == p['id']:
@@ -258,29 +240,29 @@ with col_grid:
                                 })
                             st.rerun()
     else:
-        st.warning("No hay productos en el catálogo. Sincroniza desde la PC.")
+        st.warning("SIN PRODUCTOS EN EL CATALOGO")
 
 with col_ticket:
-    # 👤 MODULO CLIENTE
+    # CLIENTE
     with st.container(border=True):
-        st.markdown("🎯 **CLIENTE SELECCIONADO**")
+        st.markdown("CLIENTE SELECCIONADO")
         c1, c2 = st.columns([3, 1])
-        c1.markdown(f"### {st.session_state.selected_client}")
+        c1.markdown(f"**{st.session_state.selected_client.upper()}**")
         with c2:
-            with st.popover("⚙️", help="Cambiar cliente"):
+            with st.popover("CAMBIAR", use_container_width=True):
                 df_c = get_data("customers")
                 options = ["Mostrador"] + (df_c['name'].tolist() if not df_c.empty else [])
-                sel = st.selectbox("Elegir:", options)
-                if st.button("Aplicar"):
+                sel = st.selectbox("ELEGIR:", options)
+                if st.button("CONFIRMAR"):
                     st.session_state.selected_client = sel
                     st.rerun()
 
-    # 🛒 MODULO CARRITO
+    # CARRITO
     st.markdown(" ")
     with st.container(border=True):
-        st.markdown("📦 **ORDEN ACTUAL**")
+        st.markdown("ORDEN ACTUAL")
         if not st.session_state.cart:
-            st.info("El carrito está vacío.")
+            st.info("CARRITO VACIO")
         else:
             total = 0
             for idx, item in enumerate(st.session_state.cart):
@@ -288,16 +270,16 @@ with col_ticket:
                 total += sub
                 
                 with st.container():
-                    st.markdown(f"**{item['name']}**")
+                    st.markdown(f"**{item['name'].upper()}**")
                     q_col, p_col = st.columns([2, 1])
                     with q_col:
                         m1, m2, m3 = st.columns([1,1,1])
-                        if m1.button("➖", key=f"m_{idx}"):
+                        if m1.button("MENOS", key=f"m_{idx}"):
                             if item['qty'] > 1: item['qty'] -= 1
                             else: st.session_state.cart.pop(idx)
                             st.rerun()
                         m2.markdown(f"<p style='text-align:center; padding-top:8px;'>{item['qty']}</p>", unsafe_allow_html=True)
-                        if m3.button("➕", key=f"p_{idx}"):
+                        if m3.button("MAS", key=f"p_{idx}"):
                             item['qty'] += 1
                             st.rerun()
                     with p_col:
@@ -306,9 +288,9 @@ with col_ticket:
             st.divider()
             st.markdown(f"<h1 style='text-align: right; color: var(--primary);'>${total:,.2f}</h1>", unsafe_allow_html=True)
             
-            if st.button("🚀 COMPLETAR VENTA", type="primary", use_container_width=True):
+            if st.button("COMPLETAR VENTA", type="primary", use_container_width=True):
                 if supabase:
-                    with st.spinner("Sincronizando con Tienda Física..."):
+                    with st.spinner("PROCESANDO..."):
                         sale_data = purify_payload({
                             "folio": f"MOB-{int(time.time())}",
                             "total": float(total),
@@ -322,14 +304,12 @@ with col_ticket:
                             supabase.table("sales").insert(sale_data).execute()
                             st.session_state.cart = []
                             st.balloons()
-                            st.success("¡Venta completada! Impresión en camino...")
+                            st.success("VENTA COMPLETADA")
                             time.sleep(1.5)
                             st.rerun()
                         except Exception as e:
-                            st.error(f"Error al sincronizar: {e}")
-                else:
-                    st.error("Error de conexión a la nube.")
+                            st.error(f"ERROR: {e}")
 
-            if st.button("Limpiar Carrito", use_container_width=True, type="secondary"):
+            if st.button("VACIAR", use_container_width=True, type="secondary"):
                 st.session_state.cart = []
                 st.rerun()
