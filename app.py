@@ -28,7 +28,7 @@ def purify_payload(data):
         return data
 
 # --- CONFIGURACIÓN ---
-st.set_page_config(page_title="VERTEX Cloud POS", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="VERTEX Cloud POS v6.4 (iPad)", page_icon="⚡", layout="wide")
 
 # --- CSS: ESTILO ESCRITORIO COMPACTO ---
 st.markdown("""
