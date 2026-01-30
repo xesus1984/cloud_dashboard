@@ -177,9 +177,10 @@ if st.session_state.view == 'pos':
             search = st.text_input("Buscar...", placeholder="Buscar producto o codigo...", label_visibility="collapsed")
         
         df_p = get_data("products")
+        
+        # Lógica de visualización: Mostrar búsqueda o catálogo inicial (Top 20)
         if search:
-            # Soporte para lector de código de barras: 
-            # Si hay un match exacto por barcode, añadir al carrito directamente
+            # Soporte para lector de código de barras
             exact_match = df_p[df_p['barcode'] == search.strip()]
             if not exact_match.empty:
                 p = exact_match.iloc[0]
@@ -194,19 +195,23 @@ if st.session_state.view == 'pos':
                         "id": int(p['id']), "name": str(p['name']), "price": float(p['price']), "qty": 1, "barcode": str(p.get('barcode', ''))
                     })
                 st.toast(f"Añadido: {p['name']}")
-                # Filtrar visualmente
-                df_p = df_p[df_p['name'].str.contains(search, case=False)]
+                df_p_view = df_p[df_p['name'].str.contains(search, case=False)].head(20)
             else:
-                df_p = df_p[df_p['name'].str.contains(search, case=False) | df_p['barcode'].str.contains(search, case=False)]
-            
-            n_cols = 5
-            for i in range(0, len(df_p), n_cols):
+                df_p_view = df_p[df_p['name'].str.contains(search, case=False) | df_p['barcode'].str.contains(search, case=False)].head(20)
+        else:
+            # Catálogo Inicial: Mostrar los productos para que no se vea vacío
+            df_p_view = df_p.head(25) if not df_p.empty else pd.DataFrame()
+
+        if not df_p_view.empty:
+            n_cols = 4 # 4 columnas para que las tarjetas sean GRANDES en iPad
+            for i in range(0, len(df_p_view), n_cols):
                 cols = st.columns(n_cols)
                 for j in range(n_cols):
-                    if i + j < len(df_p):
-                        p = df_p.iloc[i + j]
+                    if i + j < len(df_p_view):
+                        p = df_p_view.iloc[i + j]
                         with cols[j]:
-                            label = f"{p['name'][:30]}\n\n**${p['price']:,.2f}**"
+                            # Estética de botón de producto mejorada
+                            label = f"**{p['name'][:25]}**\n\n${p['price']:,.2f}"
                             if st.button(label, key=f"p_{p['id']}", use_container_width=True):
                                 found = False
                                 for item in st.session_state.cart:
@@ -223,15 +228,20 @@ if st.session_state.view == 'pos':
                                         "barcode": str(p.get('barcode', ''))
                                     })
                                 st.rerun()
+        else:
+            st.info("No se encontraron productos.")
 
     with col_ticket:
-        # TARJETA 1: CLIENTE (ARRIBA)
+        # CONTENEDOR STICKY PARA IPAD (vía CSS)
+        st.markdown('<div class="sticky-ticket">', unsafe_allow_html=True)
+        
+        # TARJETA 1: CLIENTE
         with st.container(border=True):
-            st.markdown("**Cliente**")
+            st.markdown("👤 **Cliente**")
             c_label, c_btn = st.columns([3, 2])
-            c_label.write(st.session_state.selected_client)
+            c_label.markdown(f"**{st.session_state.selected_client}**")
             with c_btn:
-                with st.popover("Cambiar", use_container_width=True):
+                with st.popover("Editar", use_container_width=True):
                     cust_df = get_data("customers")
                     c_options = ["Mostrador"] + (cust_df['name'].tolist() if not cust_df.empty else [])
                     search_c = st.selectbox("Elegir:", c_options)
@@ -239,69 +249,80 @@ if st.session_state.view == 'pos':
                         st.session_state.selected_client = search_c
                         st.rerun()
                     st.divider()
-                    new_c = st.text_input("Nuevo:")
+                    new_c = st.text_input("Nuevo Cliente:")
                     if st.button("Registrar"):
                         supabase.table("customers").insert({"name": new_c}).execute()
                         st.session_state.selected_client = new_c
                         st.rerun()
 
-        # TARJETA 2: CARRITO (ABAJO)
+        # TARJETA 2: CARRITO
         with st.container(border=True):
-            st.markdown("**Carrito**")
+            st.markdown("🛒 **Orden Actual**")
             if st.session_state.cart:
-                df_cart = pd.DataFrame(st.session_state.cart)
-                df_cart['Total'] = df_cart['price'] * df_cart['qty']
+                # Mostrar items de forma más elegante
+                total = 0
+                for idx, item in enumerate(st.session_state.cart):
+                    subtotal = item['price'] * item['qty']
+                    total += subtotal
+                    
+                    c_info, c_qty = st.columns([3, 2])
+                    with c_info:
+                        st.markdown(f"**{item['name']}**\n${item['price']:,.2f}")
+                    with c_qty:
+                        # Controles de cantidad táctiles
+                        q1, q2, q3 = st.columns([1,1,1])
+                        if q1.button("➖", key=f"minus_{idx}"):
+                            if item['qty'] > 1: item['qty'] -= 1
+                            else: st.session_state.cart.pop(idx)
+                            st.rerun()
+                        q2.markdown(f"<p style='text-align:center; padding-top:10px;'>{item['qty']}</p>", unsafe_allow_html=True)
+                        if q3.button("➕", key=f"plus_{idx}"):
+                            item['qty'] += 1
+                            st.rerun()
                 
-                st.dataframe(
-                    df_cart[['name', 'qty', 'Total']], 
-                    hide_index=True, 
-                    use_container_width=True,
-                    height=250 # Altura controlada para evitar scroll infinito
-                )
-                
-                # Calcular total
-                total = float(df_cart['Total'].sum())
-                st.markdown(f"<h3 style='text-align: right;'>Total: ${total:,.2f}</h3>", unsafe_allow_html=True)
+                st.divider()
+                st.markdown(f"<h2 style='text-align: right; color: #0f172a;'>Total: ${total:,.2f}</h2>", unsafe_allow_html=True)
 
-                if st.button("COBRAR", type="primary", use_container_width=True):
+                if st.button("CONFIRMAR Y COBRAR", type="primary", use_container_width=True, help="Enviar a cocina/impresora"):
                     folio = f"W-{int(time.time())}"
                     
                     try:
-                        # 1. Limpiar Carrito
-                        clean_cart = []
-                        for it in st.session_state.cart:
-                            clean_cart.append({
-                                "id": int(it['id']),
-                                "name": str(it['name']),
-                                "price": float(it['price']),
-                                "qty": int(it['qty']),
-                                "barcode": str(it.get('barcode', ''))
+                        with st.spinner("Procesando pago..."):
+                            clean_cart = []
+                            for it in st.session_state.cart:
+                                clean_cart.append({
+                                    "id": int(it['id']),
+                                    "name": str(it['name']),
+                                    "price": float(it['price']),
+                                    "qty": int(it['qty']),
+                                    "barcode": str(it.get('barcode', ''))
+                                })
+
+                            sale_data = purify_payload({
+                                "folio": folio,
+                                "total": float(total),
+                                "source": "web",
+                                "customer_name": str(st.session_state.selected_client),
+                                "items_data": clean_cart
                             })
 
-                        # 2. Preparar y Purificar Payload
-                        sale_data = purify_payload({
-                            "folio": folio,
-                            "total": float(total),
-                            "source": "web",
-                            "customer_name": str(st.session_state.selected_client),
-                            "items_data": clean_cart
-                        })
-
-                        # 3. Insertar
-                        supabase.table("sales").insert(sale_data).execute()
-                        
-                        st.session_state.cart = []
-                        st.success(f"Venta {folio} enviada. ¡Cocinando ticket!")
-                        time.sleep(1)
-                        st.rerun()
+                            supabase.table("sales").insert(sale_data).execute()
+                            
+                            st.session_state.cart = []
+                            st.balloons()
+                            st.success(f"Venta {folio} enviada con éxito.")
+                            time.sleep(2)
+                            st.rerun()
                     except Exception as e:
                         st.error(f"Error al procesar: {str(e)}")
                 
-                if st.button("Limpiar", use_container_width=True):
+                if st.button("VACIAR CARRITO", use_container_width=True):
                     st.session_state.cart = []
                     st.rerun()
             else:
-                st.info("Ticket vacio")
+                st.info("Agrega artículos del catálogo para comenzar.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # --- OTRAS VISTAS (Dashboard, Articulos, Clientes) permanecen igual ---
 elif st.session_state.view == 'dashboard':
