@@ -25,13 +25,13 @@ def purify_payload(data):
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(
-    page_title="Vertex Mobility v7.0", 
+    page_title="Vertex Mobility v7.1", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS: V7.0 COMPACT ELITE ---
+# --- CSS: V7.1 REAL-TIME FEEL ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;600;800&display=swap');
@@ -43,9 +43,9 @@ st.markdown("""
         --bg: #fdfdfe;
         --text-dark: #1e293b;
         --text-light: #64748b;
+        --radius: 20px;
     }
 
-    /* TIPOGRAFÍA GLOBAL */
     * { 
         font-family: 'Plus Jakarta Sans', sans-serif !important; 
         text-transform: capitalize !important; 
@@ -82,29 +82,40 @@ st.markdown("""
         vertical-align: middle;
     }
 
-    /* FIX: CABECERAS DEL CARRITO MÁS DELGADAS */
+    /* RELOJ Y FECHA */
+    .clock-container {
+        text-align: center;
+        padding-top: 10px;
+    }
+    .clock-time {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        margin: 0;
+    }
+    .clock-date {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--text-light);
+        text-transform: uppercase !important;
+        letter-spacing: 1px;
+    }
+
+    /* Carrito Layout */
     .ticket-header {
         font-size: 0.6rem !important;
-        font-weight: 400 !important; /* Fuente más delgada */
+        font-weight: 400 !important;
         color: var(--text-light);
         border-bottom: 2px solid #f1f5f9;
         margin-bottom: 8px;
-        letter-spacing: 0.5px;
     }
 
-    /* FIX: ARTÍCULOS EN EL CARRITO (TEXTO REDUCIDO) */
     .ticket-item-text {
-        font-size: 0.75rem !important; /* Tamaño reducido */
+        font-size: 0.75rem !important;
         font-weight: 400 !important;
-        line-height: 1.2 !important;
         color: var(--text-dark);
     }
 
-    /* Reducir espacio entre elementos de Streamlit en el panel lateral */
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        padding: 12px !important;
-    }
-    
     /* Búsqueda */
     .stTextInput input {
         height: 45px !important;
@@ -125,8 +136,6 @@ st.markdown("""
         color: var(--text-red) !important;
         height: 40px !important;
         font-size: 0.85rem !important;
-        font-weight: 600 !important;
-        border: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -169,18 +178,37 @@ def show_client_dialog():
         st.session_state.selected_client = sel
         st.rerun()
 
-# --- HEADER v7.0 ---
-col_ha, col_hb = st.columns([5, 1])
-with col_ha:
+# --- HEADER v7.1 CON RELOJ ---
+col_brand, col_clock, col_action = st.columns([2, 2, 2])
+
+with col_brand:
     st.markdown(f"""
         <div style="display: flex; align-items: baseline;">
             <div class="brand-title">Vertex</div>
-            <div class="version-badge">Versión 7.0</div>
+            <div class="version-badge">Versión 7.1</div>
         </div>
         <div style="font-size:0.7rem; color:var(--text-light); text-transform:uppercase;">Movilidad E Inteligencia De Negocio</div>
     """, unsafe_allow_html=True)
-with col_hb:
-    if st.button("Dashboard", use_container_width=True): show_dashboard_dialog()
+
+with col_clock:
+    # Obtener fecha y hora actual formateada
+    now = datetime.now()
+    time_str = now.strftime("%I:%M %p") # Formato 12 horas AM/PM
+    date_str = now.strftime("%A, %d De %B %Y")
+    
+    st.markdown(f"""
+        <div class="clock-container">
+            <p class="clock-time">{time_str}</p>
+            <p class="clock-date">{date_str}</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+with col_action:
+    st.write(" ") # Espaciador vertical
+    # Boton Dashboard alineado a la derecha
+    c1, c2 = st.columns([1, 1])
+    with c2:
+        if st.button("Dashboard", use_container_width=True): show_dashboard_dialog()
 
 st.write(" ")
 
@@ -212,7 +240,7 @@ with col_m:
                             st.rerun()
 
 with col_s:
-    # CLIENTE ACTUAL (Compacto)
+    # CLIENTE ACTUAL
     with st.container(border=True):
         st.markdown("<p style='font-size:0.7rem; margin:0;'>Cliente Actual</p>", unsafe_allow_html=True)
         st.markdown(f"<h4 style='margin:0;'>{st.session_state.selected_client}</h4>", unsafe_allow_html=True)
@@ -220,11 +248,10 @@ with col_s:
 
     st.write(" ")
     
-    # CARRITO (NUEVA V7.0 ULTRA COMPRESS)
+    # CARRITO (v7.1 COMPACT)
     with st.container(border=True):
         st.markdown("<h4 style='margin:0 0 10px 0;'>Carrito</h4>", unsafe_allow_html=True)
         
-        # Header ultra delgado
         th1, th2, th3, th4 = st.columns([0.6, 2.5, 1, 1])
         th1.markdown('<div class="ticket-header">Cant</div>', unsafe_allow_html=True)
         th2.markdown('<div class="ticket-header">Productos</div>', unsafe_allow_html=True)
@@ -232,10 +259,7 @@ with col_s:
         th4.markdown('<div class="ticket-header" style="text-align:right;">Total</div>', unsafe_allow_html=True)
         
         total = 0
-        current_cart = st.session_state.cart
-        
-        # Bucle de items compacto
-        for it in current_cart:
+        for it in st.session_state.cart:
             sub = it['price'] * it['qty']
             total += sub
             r1, r2, r3, r4 = st.columns([0.6, 2.5, 1, 1])
@@ -244,13 +268,11 @@ with col_s:
             r3.markdown(f'<div class="ticket-item-text">${it["price"]:,.0f}</div>', unsafe_allow_html=True)
             r4.markdown(f'<div class="ticket-item-text" style="text-align:right;">${sub:,.0f}</div>', unsafe_allow_html=True)
         
-        # Llenado dinámico solo si hay espacio, para evitar scroll
-        if len(current_cart) == 0:
+        if len(st.session_state.cart) == 0:
             st.markdown("<p style='font-size:0.7rem; color:#cbd5e1; text-align:center;'>Vacío</p>", unsafe_allow_html=True)
             
         st.markdown("<div style='margin:10px 0; border-top:1px dashed #f1f5f9;'></div>", unsafe_allow_html=True)
         
-        # Totales
         f1, f2 = st.columns([1,1])
         f1.markdown("<p style='font-size:0.8rem; margin:0;'>Total Neto</p>", unsafe_allow_html=True)
         f2.markdown(f"<h3 style='text-align:right; color:#6366f1; margin:0;'>${total:,.2f}</h3>", unsafe_allow_html=True)
