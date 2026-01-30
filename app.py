@@ -154,11 +154,9 @@ with c_head_left:
     st.markdown('<div class="brand-section"><span class="brand-name">VERTEX</span></div>', unsafe_allow_html=True)
 
 with c_head_right:
-    n1, n2, n3, n4 = st.columns(4)
-    if n1.button("Punto de Venta", use_container_width=True): st.session_state.view = 'pos'
-    if n2.button("Articulos", use_container_width=True): st.session_state.view = 'articles'
-    if n3.button("Dashboard", use_container_width=True): st.session_state.view = 'dashboard'
-    if n4.button("Clientes", use_container_width=True): st.session_state.view = 'clients'
+    n1, n2 = st.columns(2)
+    if n1.button("🛒 Punto de Venta", use_container_width=True): st.session_state.view = 'pos'
+    if n2.button("📊 Dashboard", use_container_width=True): st.session_state.view = 'dashboard'
 
 st.divider()
 
@@ -444,12 +442,3 @@ elif st.session_state.view == 'dashboard':
              else:
                  st.write("Sin registros.")
 
-elif st.session_state.view == 'articles':
-    st.subheader("Articulos")
-    df_art = get_data("products")
-    st.dataframe(df_art[['name', 'price', 'stock']], use_container_width=True, hide_index=True)
-
-elif st.session_state.view == 'clients':
-    st.subheader("Clientes")
-    df_cl = get_data("customers")
-    st.dataframe(df_cl[['name', 'email', 'phone']], use_container_width=True, hide_index=True)
