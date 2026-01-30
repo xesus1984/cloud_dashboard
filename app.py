@@ -25,29 +25,27 @@ def purify_payload(data):
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(
-    page_title="Vertex Mobility v6.9.2", 
+    page_title="Vertex Mobility v7.0", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS: V6.9.2 REFINED CARDS & PASTEL ACTION ---
+# --- CSS: V7.0 COMPACT ELITE ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;600;800&display=swap');
 
     :root {
         --primary: #6366f1;
-        --pastel-red: rgba(255, 107, 107, 0.2);
-        --pastel-red-hover: rgba(255, 107, 107, 0.3);
+        --pastel-red: rgba(255, 107, 107, 0.12);
         --text-red: #e63946;
         --bg: #fdfdfe;
-        --text-dark: #0f172a;
+        --text-dark: #1e293b;
         --text-light: #64748b;
-        --radius: 20px;
     }
 
-    /* TIPOGRAFÍA GLOBAL EN FORMATO TITULO */
+    /* TIPOGRAFÍA GLOBAL */
     * { 
         font-family: 'Plus Jakarta Sans', sans-serif !important; 
         text-transform: capitalize !important; 
@@ -58,66 +56,77 @@ st.markdown("""
     /* Ocultar UI de Streamlit */
     #MainMenu, footer, header {visibility: hidden;}
     .block-container { 
-        padding-top: 1.5rem !important; 
+        padding-top: 1rem !important; 
         padding-left: 5% !important;
         padding-right: 5% !important;
     }
 
-    /* Branding - Tamaño corregido */
+    /* Branding */
     .brand-title {
         font-weight: 800;
-        font-size: 2.2rem !important;
+        font-size: 2rem !important;
         color: var(--text-dark);
         letter-spacing: -2px;
         text-transform: uppercase !important;
     }
-    .brand-subtitle {
-        font-weight: 600;
-        font-size: 0.75rem !important;
-        color: var(--text-light);
-        text-transform: uppercase !important; /* El subtítulo se ve mejor en Caps de marca */
+    .version-badge {
+        background: #eff6ff;
+        color: #3b82f6;
+        padding: 3px 12px;
+        border-radius: 30px;
+        font-size: 0.65rem;
+        font-weight: 800;
+        border: 1px solid #dbeafe;
+        margin-left: 10px;
+        display: inline-block;
+        vertical-align: middle;
     }
 
-    /* Barra de Búsqueda Normal */
+    /* FIX: CABECERAS DEL CARRITO MÁS DELGADAS */
+    .ticket-header {
+        font-size: 0.6rem !important;
+        font-weight: 400 !important; /* Fuente más delgada */
+        color: var(--text-light);
+        border-bottom: 2px solid #f1f5f9;
+        margin-bottom: 8px;
+        letter-spacing: 0.5px;
+    }
+
+    /* FIX: ARTÍCULOS EN EL CARRITO (TEXTO REDUCIDO) */
+    .ticket-item-text {
+        font-size: 0.75rem !important; /* Tamaño reducido */
+        font-weight: 400 !important;
+        line-height: 1.2 !important;
+        color: var(--text-dark);
+    }
+
+    /* Reducir espacio entre elementos de Streamlit en el panel lateral */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        padding: 12px !important;
+    }
+    
+    /* Búsqueda */
     .stTextInput input {
-        height: 50px !important;
+        height: 45px !important;
         border-radius: 12px !important;
         background-color: #f1f5f9 !important;
-        border: none !important;
     }
 
-    /* Productos: REVERTIDOS A TAMAÑO COMPLETO */
+    /* Productos */
     div[data-testid="column"] button {
         height: 140px !important;
         background: white !important;
-        border: 1px solid #e2e8f0 !important;
-        border-radius: var(--radius) !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
-        transition: all 0.2s ease !important;
-        padding: 1rem !important;
-    }
-    div[data-testid="column"] button:active { transform: scale(0.96); }
-
-    /* --- CARRITO SIN SCROLL AJUSTADO --- */
-    .ticket-header {
-        font-size: 0.7rem;
-        font-weight: 800;
-        color: var(--text-light);
-        border-bottom: 2px solid #f1f5f9;
-        margin-bottom: 10px;
+        border-radius: 20px !important;
     }
 
-    /* BOTÓN CONFIRMAR VENTA: ROJO TRASLUCIDO / PASTEL */
+    /* Botón Confirmar Pastel */
     div.stButton > button[kind="primary"] {
         background-color: var(--pastel-red) !important;
         color: var(--text-red) !important;
-        border: 1px solid rgba(230, 57, 70, 0.2) !important;
-        font-weight: 800 !important;
-        box-shadow: none !important;
-    }
-    div.stButton > button[kind="primary"]:hover {
-        background-color: var(--pastel-red-hover) !important;
-        border: 1px solid rgba(230, 57, 70, 0.4) !important;
+        height: 40px !important;
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        border: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -160,23 +169,29 @@ def show_client_dialog():
         st.session_state.selected_client = sel
         st.rerun()
 
-# --- HEADER ---
-c_log, c_ver, c_d = st.columns([1.5, 3.5, 1])
-with c_log: st.markdown('<div class="brand-title">Vertex</div>', unsafe_allow_html=True)
-with c_ver: 
-    st.markdown('<div style="padding-top:16px;"><span style="background:#eff6ff; color:#3b82f6; padding:4px 12px; border-radius:30px; font-size:0.7rem; font-weight:800; border:1px solid #dbeafe;">Versión 6.9.2</span></div>', unsafe_allow_html=True)
-with c_d:
-    if st.button("Dashboard"): show_dashboard_dialog()
-st.markdown('<div class="brand-subtitle">Movilidad E Inteligencia De Negocio</div>', unsafe_allow_html=True)
+# --- HEADER v7.0 ---
+col_ha, col_hb = st.columns([5, 1])
+with col_ha:
+    st.markdown(f"""
+        <div style="display: flex; align-items: baseline;">
+            <div class="brand-title">Vertex</div>
+            <div class="version-badge">Versión 7.0</div>
+        </div>
+        <div style="font-size:0.7rem; color:var(--text-light); text-transform:uppercase;">Movilidad E Inteligencia De Negocio</div>
+    """, unsafe_allow_html=True)
+with col_hb:
+    if st.button("Dashboard", use_container_width=True): show_dashboard_dialog()
 
-# --- VISTA PRINCIPAL ---
-col_main, col_side = st.columns([2.8, 1.2], gap="large")
+st.write(" ")
 
-with col_main:
-    search = st.text_input("Buscar...", placeholder="Escribe O Escanea", label_visibility="collapsed")
+# --- PANEL POS ---
+col_m, col_s = st.columns([2.8, 1.2], gap="large")
+
+with col_m:
+    search = st.text_input("buscar...", placeholder="escribe o escanea", label_visibility="collapsed")
     df_p = get_data("products")
     if not df_p.empty:
-        df_view = df_p[df_p['name'].str.contains(search, case=False)].head(20) if search else df_p.head(20)
+        df_view = df_p[df_p['name'].str.contains(search, case=False)].head(16) if search else df_p.head(16)
         n_cols = 4
         for i in range(0, len(df_view), n_cols):
             cols = st.columns(n_cols)
@@ -196,50 +211,55 @@ with col_main:
                                 st.session_state.cart.append({"id": p['id'], "name": p['name'], "price": float(p['price']), "qty": 1})
                             st.rerun()
 
-with col_side:
-    # CLIENTE
+with col_s:
+    # CLIENTE ACTUAL (Compacto)
     with st.container(border=True):
-        st.markdown("**Cliente Actual**")
-        st.markdown(f"### {st.session_state.selected_client}")
+        st.markdown("<p style='font-size:0.7rem; margin:0;'>Cliente Actual</p>", unsafe_allow_html=True)
+        st.markdown(f"<h4 style='margin:0;'>{st.session_state.selected_client}</h4>", unsafe_allow_html=True)
         if st.button("Buscar Cliente", use_container_width=True): show_client_dialog()
 
     st.write(" ")
     
-    # CARRITO (Ajustado para quepar sin scroll pero respetando tamaños)
+    # CARRITO (NUEVA V7.0 ULTRA COMPRESS)
     with st.container(border=True):
-        st.markdown("### Carrito")
+        st.markdown("<h4 style='margin:0 0 10px 0;'>Carrito</h4>", unsafe_allow_html=True)
         
-        th1, th2, th3, th4 = st.columns([0.6, 2.5, 1.2, 1.2])
+        # Header ultra delgado
+        th1, th2, th3, th4 = st.columns([0.6, 2.5, 1, 1])
         th1.markdown('<div class="ticket-header">Cant</div>', unsafe_allow_html=True)
-        th2.markdown('<div class="ticket-header">Artículos</div>', unsafe_allow_html=True)
+        th2.markdown('<div class="ticket-header">Productos</div>', unsafe_allow_html=True)
         th3.markdown('<div class="ticket-header">Precio</div>', unsafe_allow_html=True)
         th4.markdown('<div class="ticket-header" style="text-align:right;">Total</div>', unsafe_allow_html=True)
         
-        running_total = 0
-        current_items = st.session_state.cart
-        for i in range(4): # 4 filas compactas
-            t1, t2, t3, t4 = st.columns([0.6, 2.5, 1.2, 1.2])
-            if i < len(current_items):
-                item = current_items[i]
-                sub = item['price'] * item['qty']
-                running_total += sub
-                t1.write(item['qty'])
-                t2.write(item['name'][:18])
-                t3.write(f"${item['price']:,.0f}")
-                t4.markdown(f"<p style='text-align:right;'>${sub:,.0f}</p>", unsafe_allow_html=True)
-            else:
-                t1.write(" ")
-
-        st.divider()
-        f1, f2 = st.columns([1, 1])
-        f1.markdown("**Total Neto**")
-        f2.markdown(f"<h3 style='text-align:right; color:#6366f1; margin:0;'>${running_total:,.2f}</h3>", unsafe_allow_html=True)
+        total = 0
+        current_cart = st.session_state.cart
         
+        # Bucle de items compacto
+        for it in current_cart:
+            sub = it['price'] * it['qty']
+            total += sub
+            r1, r2, r3, r4 = st.columns([0.6, 2.5, 1, 1])
+            r1.markdown(f'<div class="ticket-item-text">{it["qty"]}</div>', unsafe_allow_html=True)
+            r2.markdown(f'<div class="ticket-item-text">{it["name"][:20]}</div>', unsafe_allow_html=True)
+            r3.markdown(f'<div class="ticket-item-text">${it["price"]:,.0f}</div>', unsafe_allow_html=True)
+            r4.markdown(f'<div class="ticket-item-text" style="text-align:right;">${sub:,.0f}</div>', unsafe_allow_html=True)
+        
+        # Llenado dinámico solo si hay espacio, para evitar scroll
+        if len(current_cart) == 0:
+            st.markdown("<p style='font-size:0.7rem; color:#cbd5e1; text-align:center;'>Vacío</p>", unsafe_allow_html=True)
+            
+        st.markdown("<div style='margin:10px 0; border-top:1px dashed #f1f5f9;'></div>", unsafe_allow_html=True)
+        
+        # Totales
+        f1, f2 = st.columns([1,1])
+        f1.markdown("<p style='font-size:0.8rem; margin:0;'>Total Neto</p>", unsafe_allow_html=True)
+        f2.markdown(f"<h3 style='text-align:right; color:#6366f1; margin:0;'>${total:,.2f}</h3>", unsafe_allow_html=True)
+        
+        st.write(" ")
         if st.button("Confirmar Venta", type="primary", use_container_width=True):
-            if running_total > 0:
+            if total > 0:
                 st.session_state.cart = []
                 st.rerun()
-        
         if st.button("Vaciar", use_container_width=True):
             st.session_state.cart = []
             st.rerun()
