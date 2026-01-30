@@ -168,8 +168,13 @@ if st.session_state.view == 'pos':
     
     with col_grid:
         # Búsqueda en tiempo real (debounce 300ms)
-        from streamlit_keyup import st_keyup
-        search = st_keyup("Buscar...", placeholder="Buscar producto o codigo...", debounce=300, key="search_input", label_visibility="collapsed")
+        try:
+            from streamlit_keyup import st_keyup
+            search = st_keyup("Buscar...", placeholder="Buscar producto o codigo...", debounce=300, key="search_input", label_visibility="collapsed")
+        except ImportError:
+            # Fallback si faila la instalación en Cloud
+            st.warning("Mode Lite: Live Search no disponible (usando búsqueda estándar)")
+            search = st.text_input("Buscar...", placeholder="Buscar producto o codigo...", label_visibility="collapsed")
         
         df_p = get_data("products")
         if search:
