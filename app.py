@@ -250,7 +250,16 @@ with tab3:
 
     # Listado
     st.subheader("Productos existentes")
-    st.dataframe(get_products()[['name', 'price', 'stock', 'barcode']], use_container_width=True)
+    df_inv = get_products()
+    if not df_inv.empty:
+        # Asegurar que existan las columnas para evitar errores si la DB es vieja
+        cols = ['name', 'price', 'stock', 'barcode']
+        for col in cols:
+            if col not in df_inv.columns:
+                df_inv[col] = None # Rellenar columnas faltantes
+        st.dataframe(df_inv[cols], use_container_width=True)
+    else:
+        st.info("⚠️ El inventario en la nube está vacío. Crea productos aquí o sincroniza desde tu caja.")
 
 # --- TAB 4: CLIENTES ---
 with tab4:
