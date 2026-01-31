@@ -26,7 +26,7 @@ def purify_payload(data):
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(
-    page_title="Vertex Mobility v7.3", 
+    page_title="Vertex Mobility v7.3.1", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -185,9 +185,9 @@ def show_checkout_dialog(total):
                     res = supabase.table("sales").insert(payload).execute()
                     if res.data:
                         play_audio("success") # Sonido de éxito
-                        st.success("¡Venta Completada Y Sincronizada!")
+                        st.toast("Venta Exitosa")
                         st.session_state.cart = []
-                        time.sleep(1.5)
+                        time.sleep(1.2)
                         st.rerun()
                     else:
                         st.error("Error Al Guardar La Venta.")
@@ -238,7 +238,7 @@ with col_brand:
     st.markdown(f"""
         <div style="display: flex; align-items: baseline;">
             <div class="brand-title">Vertex</div>
-            <div class="version-badge">Versión 7.3</div>
+            <div class="version-badge">Versión 7.3.1</div>
         </div>
         <div style="font-size:0.7rem; color:var(--text-light); text-transform:uppercase;">Movilidad E Inteligencia De Negocio</div>
     """, unsafe_allow_html=True)
