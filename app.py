@@ -26,13 +26,13 @@ def purify_payload(data):
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(
-    page_title="Vertex Mobility v7.2", 
+    page_title="Vertex Mobility v7.2.2", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS: V7.2 CHECKOUT EXPERIENCE ---
+# --- CSS: V7.2.2 CLEAN CHECKOUT ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;600;800&display=swap');
@@ -156,7 +156,7 @@ def show_checkout_dialog(total):
     st.write(" ")
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("✅ PAGAR", use_container_width=True, type="primary"):
+        if st.button("PAGAR", use_container_width=True, type="primary"):
             if supabase:
                 try:
                     payload = {
@@ -179,7 +179,7 @@ def show_checkout_dialog(total):
             else:
                 st.error("Supabase No Está Configurado.")
     with col2:
-        if st.button("📅 AGENDAR", use_container_width=True):
+        if st.button("AGENDAR", use_container_width=True):
             st.info("Pedido Agendado")
             st.session_state.cart = []
             time.sleep(1)
@@ -221,7 +221,7 @@ with col_brand:
     st.markdown(f"""
         <div style="display: flex; align-items: baseline;">
             <div class="brand-title">Vertex</div>
-            <div class="version-badge">Versión 7.2</div>
+            <div class="version-badge">Versión 7.2.2</div>
         </div>
         <div style="font-size:0.7rem; color:var(--text-light); text-transform:uppercase;">Movilidad E Inteligencia De Negocio</div>
     """, unsafe_allow_html=True)
