@@ -26,13 +26,29 @@ def purify_payload(data):
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(
-    page_title="Vertex Mobility v7.2.2", 
+    page_title="Vertex Mobility v7.3", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS: V7.2.2 CLEAN CHECKOUT ---
+# --- SISTEMA DE SONIDO ---
+def play_audio(sound_type="click"):
+    # URLs de sonidos premium cortos
+    sounds = {
+        "click": "https://cdn.pixabay.com/audio/2022/03/15/audio_7302484f47.mp3", # Pop suave
+        "success": "https://cdn.pixabay.com/audio/2021/08/04/audio_bb6304535b.mp3", # Chime de éxito
+        "cancel": "https://www.soundjay.com/buttons/sounds/button-10.mp3"
+    }
+    url = sounds.get(sound_type)
+    if url:
+        st.markdown(f"""
+            <audio autoplay>
+                <source src="{url}" type="audio/mpeg">
+            </audio>
+        """, unsafe_allow_html=True)
+
+# --- CSS: V7.3 SOUND EDITION ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;600;800&display=swap');
@@ -168,6 +184,7 @@ def show_checkout_dialog(total):
                     }
                     res = supabase.table("sales").insert(payload).execute()
                     if res.data:
+                        play_audio("success") # Sonido de éxito
                         st.success("¡Venta Completada Y Sincronizada!")
                         st.session_state.cart = []
                         time.sleep(1.5)
@@ -221,7 +238,7 @@ with col_brand:
     st.markdown(f"""
         <div style="display: flex; align-items: baseline;">
             <div class="brand-title">Vertex</div>
-            <div class="version-badge">Versión 7.2.2</div>
+            <div class="version-badge">Versión 7.3</div>
         </div>
         <div style="font-size:0.7rem; color:var(--text-light); text-transform:uppercase;">Movilidad E Inteligencia De Negocio</div>
     """, unsafe_allow_html=True)
@@ -269,6 +286,7 @@ with col_m:
                                     "qty": 1,
                                     "barcode": p.get('barcode', '')
                                 })
+                            play_audio("click") # Sonido al agregar
                             st.rerun()
 
 with col_s:
