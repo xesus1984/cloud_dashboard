@@ -26,7 +26,7 @@ def purify_payload(data):
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(
-    page_title="Vertex Mobility v7.4", 
+    page_title="Vertex Mobility v7.5", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -47,7 +47,7 @@ def play_audio(sound_type="click"):
             </audio>
         """, unsafe_allow_html=True)
 
-# --- CSS: V7.4 GLASS & LUXURY EDITION ---
+# --- CSS: V7.5 FULL SYNC EDITION ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;600;800&display=swap');
@@ -162,10 +162,10 @@ st.markdown("""
         padding: 15px !important;
     }
 
-    /* Búsqueda Modern */
+    /* Búsqueda Modern - Rectangular */
     .stTextInput input {
         height: 48px !important;
-        border-radius: 16px !important;
+        border-radius: 0 !important; /* Esquinas rectas */
         background-color: white !important;
         border: 1px solid #e2e8f0 !important;
         box-shadow: 0 2px 10px rgba(0,0,0,0.02) !important;
@@ -264,13 +264,63 @@ def show_dashboard_dialog():
 
 @st.dialog("Clientes")
 def show_client_dialog():
-    st.markdown("### Seleccionar Cliente")
-    df_c = get_data("customers")
-    options = ["Mostrador"] + (df_c['name'].tolist() if not df_c.empty else [])
-    sel = st.selectbox("Elegir Cliente:", options)
-    if st.button("Confirmar", type="primary", use_container_width=True):
-        st.session_state.selected_client = sel
-        st.rerun()
+    tab_search, tab_new = st.tabs(["🔍 Buscar Cliente", "➕ Nuevo Cliente"])
+    
+    with tab_search:
+        df_c = get_data("customers")
+        options = ["Mostrador"] + (df_c['name'].tolist() if not df_c.empty else [])
+        sel = st.selectbox("Elegir Cliente:", options)
+        if st.button("Confirmar Y Seleccionar", type="primary", use_container_width=True):
+            st.session_state.selected_client = sel
+            st.rerun()
+
+    with tab_new:
+        with st.form("new_customer_web"):
+            c1, c2 = st.columns(2)
+            name = c1.text_input("Nombre Completo *")
+            company = c2.text_input("Empresa")
+            
+            c3, c4 = st.columns(2)
+            phone = c3.text_input("Teléfono")
+            email = c4.text_input("Email")
+            
+            c5, c6 = st.columns(2)
+            address = c5.text_input("Dirección")
+            localidad = c6.text_input("Localidad")
+            
+            show_bday = st.toggle("Agregar Cumpleaños")
+            birthday = None
+            if show_bday:
+                 birthday = st.date_input("Fecha De Nacimiento", value=datetime(2000, 1, 1)).isoformat()
+            
+            st.write(" ")
+            if st.form_submit_button("Guardar Y Seleccionar", use_container_width=True, type="primary"):
+                if name:
+                    if supabase:
+                        try:
+                            cust_payload = {
+                                "name": name,
+                                "company": company,
+                                "phone": phone,
+                                "email": email,
+                                "address": address,
+                                "localidad": localidad,
+                                "birthday": birthday,
+                                "notes": "Creado desde Cloud Dashboard"
+                            }
+                            res = supabase.table("customers").insert(cust_payload).execute()
+                            if res.data:
+                                play_audio("success")
+                                st.session_state.selected_client = name
+                                st.success(f"Cliente {name} Guardado Correctamente")
+                                time.sleep(1)
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {str(e)}")
+                    else:
+                        st.error("Conexión No Disponible")
+                else:
+                    st.warning("El Nombre Es Obligatorio")
 
 # --- HEADER v7.2 ---
 col_brand, col_clock, col_action = st.columns([2, 2, 2])
@@ -278,7 +328,7 @@ with col_brand:
     st.markdown(f"""
         <div style="display: flex; align-items: baseline;">
             <div class="brand-title">Vertex</div>
-            <div class="version-badge">Versión 7.4</div>
+            <div class="version-badge">Versión 7.5</div>
         </div>
         <div style="font-size:0.7rem; color:var(--text-light); text-transform:uppercase;">Movilidad E Inteligencia De Negocio</div>
     """, unsafe_allow_html=True)
