@@ -157,10 +157,27 @@ def show_checkout_dialog(total):
     col1, col2 = st.columns(2)
     with col1:
         if st.button("✅ PAGAR", use_container_width=True, type="primary"):
-            st.success("¡Venta Completada!")
-            st.session_state.cart = []
-            time.sleep(1)
-            st.rerun()
+            if supabase:
+                try:
+                    payload = {
+                        "customer_name": st.session_state.selected_client,
+                        "total": total,
+                        "items_data": purify_payload(st.session_state.cart),
+                        "source": "web",
+                        "created_at": datetime.now(pytz.timezone('America/Mexico_City')).isoformat()
+                    }
+                    res = supabase.table("sales").insert(payload).execute()
+                    if res.data:
+                        st.success("¡Venta Completada Y Sincronizada!")
+                        st.session_state.cart = []
+                        time.sleep(1.5)
+                        st.rerun()
+                    else:
+                        st.error("Error Al Guardar La Venta.")
+                except Exception as e:
+                    st.error(f"Error De Conexión: {str(e)}")
+            else:
+                st.error("Supabase No Está Configurado.")
     with col2:
         if st.button("📅 AGENDAR", use_container_width=True):
             st.info("Pedido Agendado")
@@ -244,7 +261,14 @@ with col_m:
                             found = False
                             for item in st.session_state.cart:
                                 if item['id'] == p['id']: item['qty'] += 1; found = True; break
-                            if not found: st.session_state.cart.append({"id": p['id'], "name": p['name'], "price": float(p['price']), "qty": 1})
+                            if not found:
+                                st.session_state.cart.append({
+                                    "id": p['id'], 
+                                    "name": p['name'], 
+                                    "price": float(p['price']), 
+                                    "qty": 1,
+                                    "barcode": p.get('barcode', '')
+                                })
                             st.rerun()
 
 with col_s:
