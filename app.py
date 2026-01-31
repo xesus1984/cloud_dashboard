@@ -26,7 +26,7 @@ def purify_payload(data):
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(
-    page_title="Vertex Mobility v7.5", 
+    page_title="Vertex Mobility v7.5.1", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -122,8 +122,9 @@ st.markdown("""
     }
     .ticket-item-text { font-size: 0.75rem !important; font-weight: 400 !important; color: var(--text-dark); }
 
-    /* BOTONES PASTEL */
-    div.stButton > button[kind="primary"] {
+    /* BOTONES PASTEL (General y Formularios) */
+    div.stButton > button[kind="primary"],
+    div.stFormSubmitButton > button[kind="primary"] {
         background-color: var(--pastel-red) !important;
         color: var(--text-red) !important;
         border: 1px solid rgba(230, 57, 70, 0.15) !important;
@@ -264,7 +265,7 @@ def show_dashboard_dialog():
 
 @st.dialog("Clientes")
 def show_client_dialog():
-    tab_search, tab_new = st.tabs(["🔍 Buscar Cliente", "➕ Nuevo Cliente"])
+    tab_search, tab_new = st.tabs(["Buscar Cliente", "Nuevo Cliente"])
     
     with tab_search:
         df_c = get_data("customers")
@@ -328,7 +329,7 @@ with col_brand:
     st.markdown(f"""
         <div style="display: flex; align-items: baseline;">
             <div class="brand-title">Vertex</div>
-            <div class="version-badge">Versión 7.5</div>
+            <div class="version-badge">Versión 7.5.1</div>
         </div>
         <div style="font-size:0.7rem; color:var(--text-light); text-transform:uppercase;">Movilidad E Inteligencia De Negocio</div>
     """, unsafe_allow_html=True)
