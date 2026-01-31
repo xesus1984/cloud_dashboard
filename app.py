@@ -26,7 +26,7 @@ def purify_payload(data):
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(
-    page_title="Vertex Mobility v7.3.2", 
+    page_title="Vertex Mobility v7.4", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -37,8 +37,7 @@ def play_audio(sound_type="click"):
     # URLs de sonidos premium cortos
     sounds = {
         "click": "https://cdn.pixabay.com/audio/2022/03/15/audio_7302484f47.mp3", # Pop suave
-        "success": "https://cdn.pixabay.com/audio/2021/08/04/audio_bb6304535b.mp3", # Chime de éxito
-        "cancel": "https://www.soundjay.com/buttons/sounds/button-10.mp3"
+        "success": "https://cdn.pixabay.com/audio/2021/08/04/audio_bb6304535b.mp3" # Chime de éxito
     }
     url = sounds.get(sound_type)
     if url:
@@ -48,18 +47,21 @@ def play_audio(sound_type="click"):
             </audio>
         """, unsafe_allow_html=True)
 
-# --- CSS: V7.3 SOUND EDITION ---
+# --- CSS: V7.4 GLASS & LUXURY EDITION ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;600;800&display=swap');
 
     :root {
         --primary: #6366f1;
-        --pastel-red: rgba(255, 107, 107, 0.15);
+        --primary-soft: rgba(99, 102, 241, 0.1);
+        --pastel-red: rgba(255, 107, 107, 0.12);
         --text-red: #e63946;
-        --bg: #fdfdfe;
-        --text-dark: #1e293b;
+        --bg: #f8fafc;
+        --text-dark: #0f172a;
         --text-light: #64748b;
+        --glass-bg: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.4);
         --radius: 20px;
     }
 
@@ -68,7 +70,10 @@ st.markdown("""
         text-transform: capitalize !important; 
     }
 
-    .stApp { background-color: var(--bg); }
+    .stApp { 
+        background-image: radial-gradient(circle at top right, #e2e8f0, #f8fafc);
+        background-attachment: fixed;
+    }
 
     /* Ocultar UI de Streamlit */
     #MainMenu, footer, header {visibility: hidden;}
@@ -78,7 +83,7 @@ st.markdown("""
         padding-right: 5% !important;
     }
 
-    /* Branding */
+    /* Branding Luxury */
     .brand-title {
         font-weight: 800;
         font-size: 2rem !important;
@@ -87,13 +92,14 @@ st.markdown("""
         text-transform: uppercase !important;
     }
     .version-badge {
-        background: #eff6ff;
-        color: #3b82f6;
+        background: white;
+        color: var(--primary);
         padding: 3px 12px;
         border-radius: 30px;
         font-size: 0.65rem;
         font-weight: 800;
-        border: 1px solid #dbeafe;
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         margin-left: 10px;
         display: inline-block;
         vertical-align: middle;
@@ -128,6 +134,41 @@ st.markdown("""
     div[role="dialog"] {
         border-radius: var(--radius) !important;
         border: 1px solid #e2e8f0 !important;
+    }
+
+    /* PRODUCTOS CON ELEVACIÓN */
+    div[data-testid="column"] button {
+        height: 140px !important;
+        background: white !important;
+        border: 1px solid #f1f5f9 !important;
+        border-radius: 24px !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    div[data-testid="column"] button:hover {
+        transform: translateY(-6px) !important;
+        box-shadow: 0 12px 25px rgba(99, 102, 241, 0.1) !important;
+        border: 1px solid var(--primary-soft) !important;
+    }
+
+    /* GLASSMORPHISM - PANELES LATERALES */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background: var(--glass-bg) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border: 1px solid var(--glass-border) !important;
+        border-radius: 28px !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05) !important;
+        padding: 15px !important;
+    }
+
+    /* Búsqueda Modern */
+    .stTextInput input {
+        height: 48px !important;
+        border-radius: 16px !important;
+        background-color: white !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -237,7 +278,7 @@ with col_brand:
     st.markdown(f"""
         <div style="display: flex; align-items: baseline;">
             <div class="brand-title">Vertex</div>
-            <div class="version-badge">Versión 7.3.2</div>
+            <div class="version-badge">Versión 7.4</div>
         </div>
         <div style="font-size:0.7rem; color:var(--text-light); text-transform:uppercase;">Movilidad E Inteligencia De Negocio</div>
     """, unsafe_allow_html=True)
